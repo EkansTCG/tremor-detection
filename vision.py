@@ -46,6 +46,7 @@ FINGERTIPS = (THUMB_TIP, INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP)
 
 
 @dataclass
+# Container about one hand in 1 frame
 class HandFrame:
     """One detected hand in one frame."""
     t: float                    # seconds since tracker start (monotonic)
@@ -59,7 +60,7 @@ class HandFrame:
     tremor_y: float = np.nan    # image-space vertical position of middle MCP / hand size in px
     extras: dict = field(default_factory=dict)
 
-
+# Automatically download hand_landmarker in to models/
 def ensure_model(path: str = MODEL_PATH) -> str:
     if not os.path.exists(path) or os.path.getsize(path) < 1_000_000:
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -75,6 +76,7 @@ class HandTracker:
     frame is paired with its own landmarks and a precise timestamp for the DSP.
     """
 
+    # Open webcam
     def __init__(self, camera_index: int = 0, num_hands: int = 1, width: int = 1280,
                  height: int = 720, fps: int = 30, mirror: bool = True,
                  min_detection_confidence: float = 0.5, min_presence_confidence: float = 0.5,
@@ -103,6 +105,7 @@ class HandTracker:
         self._last_frame_t = None
 
     # ------------------------------------------------------------------ core
+    # grab one frame
     def read(self):
         """Grab one webcam frame and run the landmarker.
 
@@ -149,6 +152,7 @@ class HandTracker:
         return hands
 
     @staticmethod
+    # Calculate two key numbers
     def _features(hf: HandFrame, w: int, h: int) -> None:
         # 3D metric hand size (wrist -> middle MCP); robust to camera distance and rotation.
         hf.hand_size = float(np.linalg.norm(hf.world[MIDDLE_MCP] - hf.world[WRIST]))
@@ -166,6 +170,7 @@ class HandTracker:
 
     # ------------------------------------------------------------- drawing
     @staticmethod
+    # Draw the skeleton
     def draw(frame, hands: list[HandFrame], show_pinch: bool = True):
         for hf in hands:
             pts = hf.pixels
