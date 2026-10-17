@@ -5,6 +5,7 @@ All thresholds live at the top so you can calibrate them at your demo table.
 import numpy as np
 from scipy.signal import butter, filtfilt, find_peaks, welch, detrend
 from scipy.stats import linregress
+from scipy.integrate import trapezoid
 
 FS = 30.0  # uniform resample rate (Hz)
 
@@ -88,8 +89,8 @@ def analyze_tremor_spectrum(t, y, fs=FS):
     out["f"], out["psd"] = f, p
     full = (f >= 1) & (f <= 12)
     band = (f >= TREMOR_BAND[0]) & (f <= TREMOR_BAND[1])
-    total = np.trapz(p[full], f[full]) if full.any() else 0.0
-    out["band_ratio"] = float(np.trapz(p[band], f[band]) / total) if total > 0 else 0.0
+    total = trapezoid(p[full], f[full]) if full.any() else 0.0
+    out["band_ratio"] = float(trapezoid(p[band], f[band]) / total) if total > 0 else 0.0
     if full.any():
         out["peak_hz"] = float(f[full][np.argmax(p[full])])
     out["rms"] = float(np.sqrt(np.mean(xf ** 2)))
