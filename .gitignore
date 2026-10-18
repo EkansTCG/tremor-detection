@@ -6,3 +6,5 @@ models/*.task
 reports/*
 !reports/.gitkeep
 *.db
+.env
+.env.*

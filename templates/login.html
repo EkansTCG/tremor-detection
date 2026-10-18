@@ -8,37 +8,37 @@
 
     <!-- Brand Header -->
     <div class="text-center mb-8">
-      <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-teal-400 items-center justify-center text-slate-950 font-bold shadow-xl shadow-cyan-500/20 mb-3">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-400 via-sky-500 to-pink-500 items-center justify-center text-white font-bold shadow-xl shadow-pink-500/25 mb-3 wave-float">
+        <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
         </svg>
       </div>
-      <h1 class="text-2xl font-bold text-white tracking-tight">Clinical Motor Assessment</h1>
-      <p class="text-sm text-slate-400 mt-1">MDS-UPDRS Bradykinesia & Postural Tremor System</p>
+      <h1 class="text-2xl font-bold text-white tracking-tight font-heading">Clinical Motor Assessment</h1>
+      <p class="text-xs text-cyan-300/80 mt-1">MDS-UPDRS Bradykinesia & Postural Tremor System &bull; Dare to Dive</p>
     </div>
 
-    <!-- Main Login Card -->
-    <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-800">
+    <!-- Main Login Card with Frosted Ocean Glassmorphism -->
+    <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl border border-pink-500/30">
 
       <!-- 1-Click Demo Patient Access (Judges Shortcut) -->
-      <div class="mb-6 pb-6 border-b border-slate-800/80">
+      <div class="mb-6 pb-6 border-b border-pink-500/20">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="text-xs font-semibold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="inline-block w-2 h-2 rounded-full bg-pink-400 animate-ping"></span>
             Judge & Live Testing Mode
           </span>
-          <span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">PT-88219</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-ocean-abyss text-pink-300 font-mono border border-pink-500/30">PT-88219</span>
         </div>
         
         <form action="{{ url_for('demo_login') }}" method="POST">
-          <button type="submit" id="btn-demo-login" class="w-full group relative py-3.5 px-4 rounded-xl font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 hover:brightness-110 shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center space-x-2">
-            <svg class="w-5 h-5 text-slate-950 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+          <button type="submit" id="btn-demo-login" class="w-full group relative py-3.5 px-4 rounded-xl font-bold text-white btn-dive-gradient shadow-lg transition-all flex items-center justify-center space-x-2">
+            <svg class="w-5 h-5 text-white group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clip-rule="evenodd"/>
             </svg>
-            <span class="tracking-wide text-sm">⚡ 1-Click Demo Patient Login</span>
+            <span class="tracking-wide text-sm font-heading">⚡ 1-Click Demo Patient Login</span>
           </button>
         </form>
-        <p class="text-[11px] text-slate-400 text-center mt-2">
+        <p class="text-[11px] text-slate-300/80 text-center mt-2.5">
           Bypasses typing credentials. Loads Eleanor Vance (Age 68) with pre-seeded longitudinal history.
         </p>
       </div>
@@ -48,25 +48,25 @@
         <div>
           <label for="email" class="block text-xs font-medium text-slate-300 mb-1.5">Clinical Email / Patient Login</label>
           <input type="email" id="email" name="email" value="demo@patient.org" required placeholder="clinician@hospital.org"
-                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                 class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
         </div>
 
         <div>
           <label for="password" class="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
           <input type="password" id="password" name="password" value="demopatient123" required placeholder="••••••••••••"
-                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
-          <p class="text-[11px] text-slate-500 mt-1">Pre-filled with demo credentials (or click the green button above).</p>
+                 class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
+          <p class="text-[11px] text-slate-400 mt-1">Pre-filled with demo credentials (or click the 1-Click Demo Patient Login button above).</p>
         </div>
 
-        <button type="submit" class="w-full py-2.5 px-4 rounded-xl font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm transition">
+        <button type="submit" class="w-full py-2.5 px-4 rounded-xl font-semibold text-white bg-ocean-surf/90 hover:bg-ocean-surf border border-cyan-500/40 text-sm transition shadow-sm hover:border-pink-400">
           Sign In to Portal
         </button>
       </form>
 
       <!-- Signup Redirect -->
-      <div class="mt-6 pt-5 border-t border-slate-800/80 text-center text-xs text-slate-400">
+      <div class="mt-6 pt-5 border-t border-pink-500/20 text-center text-xs text-slate-300">
         New clinician or clinical site? 
-        <a href="{{ url_for('signup') }}" class="text-cyan-400 hover:text-cyan-300 font-medium ml-1">
+        <a href="{{ url_for('signup') }}" class="text-pink-400 hover:text-pink-300 font-semibold ml-1 transition-colors">
           Register Patient Account &rarr;
         </a>
       </div>
@@ -74,7 +74,7 @@
     </div>
 
     <!-- Security & Fallback Notice -->
-    <div class="mt-6 text-center text-[11px] text-slate-500 space-y-1">
+    <div class="mt-6 text-center text-[11px] text-slate-400 space-y-1">
       <p>Data persistence automatically routes to <strong>{{ db_backend }}</strong>.</p>
       <p>Complies with standardized MDS-UPDRS Part III clinical protocol specifications.</p>
     </div>

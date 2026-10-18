@@ -181,39 +181,43 @@ def analyze_tremor_spectrum(t, y, x_coord=None, fs=FS):
     ratio = out["band_ratio"]
     peak_hz = out["peak_hz"]
 
-    # 4-6 Hz Parkinsonian tremor condition
+    # 4-6 Hz Parkinsonian tremor condition: true 4-6 Hz dominant peak with concentrated power (>= 25%) and measurable RMS
     is_parkinsonian = (ratio >= 0.25 and 4.0 <= peak_hz <= 6.5 and rms >= 0.010)
 
-    # Elevated risk triggers if Parkinsonian band concentrated OR significant 2D RMS / velocity / excursion detected
-    is_elevated = bool(
-        is_parkinsonian or
-        rms >= 0.018 or
-        vel_rms >= 0.35 or
-        excursion >= 0.065
-    )
-
-    if not is_elevated:
-        risk_badge = "NORMAL"
-        tremor_type = "Physiological (Normal)"
-        label = "Normal"
-        score = 0
+    # Determine strict 4-tier score (0 to 4)
+    if rms >= 0.090 or vel_rms >= 1.20 or excursion >= 0.25:
+        score = 4
+    elif rms >= 0.050 or vel_rms >= 0.60 or excursion >= 0.14:
+        score = 3
+    elif is_parkinsonian or rms >= 0.025 or vel_rms >= 0.35 or excursion >= 0.08:
+        score = 2
+    elif rms >= 0.018 or vel_rms >= 0.20 or excursion >= 0.04:
+        score = 1
     else:
-        # Proportionate MDS-UPDRS 3.15 Physical Scoring (1-4)
-        if rms >= 0.090 or vel_rms >= 1.20 or excursion >= 0.25:
-            score = 4
-        elif rms >= 0.050 or vel_rms >= 0.60 or excursion >= 0.14:
-            score = 3
-        elif rms >= 0.025 or vel_rms >= 0.35 or excursion >= 0.08:
-            score = 2
-        else:
-            score = 1
+        score = 0
 
-        label = SCORE_LABELS.get(score, "Moderate")
+    label = SCORE_LABELS.get(score, "Normal")
+    is_elevated = bool(score >= 3 or (score >= 2 and is_parkinsonian))
+
+    if score == 0:
+        risk_badge = "NORMAL (CALM WATERS)"
+        tremor_type = "Physiological (Normal)"
+    elif score == 1:
+        risk_badge = "SLIGHT / MILD POSTURAL EMERGENCE"
+        tremor_type = "Mild Postural Emergence"
+    elif score == 2:
+        if is_parkinsonian:
+            risk_badge = "MILD POSTURAL EMERGENCE (4-6 HZ BAND)"
+            tremor_type = "Mild Parkinsonian Postural Tremor (4-6 Hz)"
+        else:
+            risk_badge = "MILD POSTURAL MOVEMENT DETECTED"
+            tremor_type = "Mild Kinematic Excursion"
+    else:
         if is_parkinsonian:
             risk_badge = "ELEVATED RISK / 4-6 HZ PARKINSONIAN BAND"
             tremor_type = "Parkinsonian Postural Tremor (4-6 Hz)"
         else:
-            risk_badge = "ELEVATED RISK / ABNORMAL MOVEMENT DETECTED"
+            risk_badge = "ELEVATED RISK / HIGH-AMPLITUDE MOVEMENT"
             tremor_type = "High-Amplitude Kinetic Shaking / Tremor"
 
     out["score"] = score

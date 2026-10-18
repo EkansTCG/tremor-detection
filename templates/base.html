@@ -4,14 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Clinical Motor Assessment{% endblock %} — TremorTrack MDS-UPDRS</title>
-  <!-- Google Fonts: Inter -->
+  
+  <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Marked.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -19,24 +24,35 @@
         extend: {
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
           },
           colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              400: '#2dd4bf',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
+            ocean: {
+              abyss: '#061326',
+              deep: '#0b213f',
+              mid: '#0f2e5a',
+              surf: '#133e75',
+              border: 'rgba(56, 189, 248, 0.22)',
             },
-            clinical: {
-              cyan: '#00e5ff',
-              emerald: '#10b981',
-              amber: '#f59e0b',
-              rose: '#f43f5e',
-              dark: '#0b0f19',
-              card: '#111827',
-              border: '#1f293d',
+            ribbon: {
+              light: '#fbcfe8',
+              pink: '#f472b6',
+              hot: '#ec4899',
+              dark: '#be185d',
+              border: 'rgba(244, 114, 182, 0.28)',
+            },
+            cyan: {
+              wave: '#38bdf8',
+              glow: '#00e5ff',
+              deep: '#0ea5e9',
+            },
+            // Strict 4-Tier Clinical Severity Scale
+            tier: {
+              0: '#14b8a6', // Score 0: Seafoam / Bioluminescent Teal
+              1: '#eab308', // Score 1: Soft Coral / Sunlit Amber-Gold (NOT RED)
+              2: '#f97316', // Score 2: Warm Sunset Orange (NOT RED)
+              3: '#f43f5e', // Score 3 & 4: Deep Crimson / Coral Red
+              4: '#f43f5e',
             }
           }
         }
@@ -44,59 +60,205 @@
     }
   </script>
   <style>
+    /* Technica 2026: Dare to Dive Ocean Theme */
     body {
-      background-color: #0b0f19;
+      background: linear-gradient(140deg, #061326 0%, #0b213f 45%, #0f2e5a 100%) fixed;
       color: #e2e8f0;
       font-family: 'Inter', sans-serif;
+      min-height: 100vh;
     }
+    
     .glass-panel {
-      background: rgba(17, 24, 39, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(11, 33, 63, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      box-shadow: 0 10px 30px -10px rgba(6, 19, 38, 0.6);
     }
+
+    .glass-panel-cyan {
+      background: rgba(11, 33, 63, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      box-shadow: 0 10px 30px -10px rgba(14, 165, 233, 0.15);
+    }
+
+    /* Gradient CTA Ocean Cyan to Radiant Blue */
+    .btn-dive-gradient {
+      background: linear-gradient(135deg, #0ea5e9 0%, #00e5ff 100%);
+      color: #061326;
+      font-weight: 700;
+      box-shadow: 0 4px 18px -2px rgba(0, 229, 255, 0.35);
+      transition: all 0.25s ease-in-out;
+    }
+    .btn-dive-gradient:hover {
+      background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%);
+      box-shadow: 0 6px 24px -2px rgba(0, 229, 255, 0.55);
+      transform: translateY(-1px);
+    }
+
     .glow-cyan {
-      box-shadow: 0 0 20px -3px rgba(0, 229, 255, 0.25);
+      box-shadow: 0 0 25px -4px rgba(56, 189, 248, 0.35);
     }
-    .glow-rose {
-      box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.25);
+
+    /* 4-Tier Clinical Severity Badges */
+    .tier-badge-0 {
+      background: rgba(20, 184, 166, 0.15);
+      color: #2dd4bf;
+      border: 1px solid #14b8a6;
+    }
+    .tier-badge-1 {
+      background: rgba(234, 179, 8, 0.18);
+      color: #fde047;
+      border: 1px solid #eab308;
+    }
+    .tier-badge-2 {
+      background: rgba(249, 115, 22, 0.18);
+      color: #fdba74;
+      border: 1px solid #f97316;
+    }
+    .tier-badge-3, .tier-badge-4 {
+      background: rgba(244, 63, 94, 0.22);
+      color: #fda4af;
+      border: 1px solid #f43f5e;
+    }
+
+    /* Animated Ocean Wave Header */
+    .ocean-waves-backdrop {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(6, 19, 38, 0.95) 0%, rgba(11, 33, 63, 0.70) 100%);
+    }
+    .ocean-waves-svg {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 64px;
+    }
+    .wave-parallax > use {
+      animation: oceanWaveFlow 14s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
+    }
+    .wave-parallax > use:nth-child(1) {
+      animation-delay: -2s;
+      animation-duration: 9s;
+    }
+    .wave-parallax > use:nth-child(2) {
+      animation-delay: -4s;
+      animation-duration: 13s;
+    }
+    .wave-parallax > use:nth-child(3) {
+      animation-delay: -6s;
+      animation-duration: 18s;
+    }
+    .wave-parallax > use:nth-child(4) {
+      animation-delay: -8s;
+      animation-duration: 22s;
+    }
+    @keyframes oceanWaveFlow {
+      0% {
+        transform: translate3d(-90px, 0, 0);
+      }
+      100% {
+        transform: translate3d(85px, 0, 0);
+      }
+    }
+
+    @keyframes waveSubtle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .wave-float {
+      animation: waveSubtle 4s ease-in-out infinite;
     }
   </style>
   {% block head %}{% endblock %}
 </head>
-<body class="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 antialiased selection:bg-teal-500 selection:text-white">
+<body class="min-h-screen flex flex-col text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950">
 
-  <!-- Top Navigation Header -->
-  <header class="glass-panel sticky top-0 z-50 border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <!-- Top Navigation Header with Animated Ocean Waves -->
+  <header class="relative overflow-hidden sticky top-0 z-50 border-b border-cyan-500/30 bg-ocean-abyss/85 backdrop-blur-md shadow-lg shadow-cyan-950/40">
+    <!-- Animated Ocean Waves Layer -->
+    <div class="ocean-waves-backdrop absolute inset-0 pointer-events-none select-none z-0">
+      <svg class="ocean-waves-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+        <defs>
+          <path id="ocean-wave-curve" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+          <linearGradient id="waveCyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0284c7" stop-opacity="0.25"/>
+            <stop offset="50%" stop-color="#00e5ff" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#0284c7" stop-opacity="0.25"/>
+          </linearGradient>
+          <linearGradient id="waveDeepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0369a1" stop-opacity="0.35"/>
+            <stop offset="50%" stop-color="#0284c7" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#0369a1" stop-opacity="0.35"/>
+          </linearGradient>
+          <linearGradient id="waveSurfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.20"/>
+            <stop offset="50%" stop-color="#7dd3fc" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.20"/>
+          </linearGradient>
+        </defs>
+        <g class="wave-parallax">
+          <use href="#ocean-wave-curve" x="48" y="0" fill="url(#waveDeepGrad)" />
+          <use href="#ocean-wave-curve" x="48" y="3" fill="url(#waveCyanGrad)" />
+          <use href="#ocean-wave-curve" x="48" y="5" fill="url(#waveSurfGrad)" />
+          <use href="#ocean-wave-curve" x="48" y="7" fill="rgba(6, 19, 38, 0.4)" />
+        </g>
+      </svg>
+    </div>
+
+    <!-- Header Foreground Elements -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
-      <!-- Logo & Brand -->
+      <!-- Logo & Brand with Ocean Theme -->
       <a href="{{ url_for('home') }}" class="flex items-center space-x-3 group">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-teal-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 via-sky-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/25 group-hover:scale-105 transition-transform">
+          <!-- Ocean Wave Icon -->
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
           </svg>
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <span class="text-lg font-bold tracking-tight text-white">TremorTrack</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-semibold uppercase">MDS-UPDRS</span>
+            <span class="text-lg font-bold tracking-tight text-white font-heading">TremorTrack</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-sky-950 to-cyan-950 border border-cyan-500/40 text-cyan-300 font-semibold uppercase tracking-wider">
+              MDS-UPDRS
+            </span>
           </div>
-          <span class="text-xs text-slate-400 block -mt-0.5">Clinical Motor Assessment Engine</span>
+          <span class="text-[11px] text-cyan-300/80 block -mt-0.5 font-medium">Clinical Kinematic Engine</span>
         </div>
       </a>
+
+      <!-- Technica 2026: Dare to Dive Ocean Badge -->
+      <div class="hidden lg:flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-ocean-abyss/85 border border-cyan-400/40 text-xs shadow-sm shadow-cyan-500/20 backdrop-blur-sm">
+        <span class="flex items-center gap-1.5 text-cyan-300 font-semibold">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          🌊 Dare to Dive
+        </span>
+        <span class="text-slate-500">&bull;</span>
+        <span class="text-slate-300 font-medium">Technica 2026</span>
+      </div>
 
       <!-- Navigation Links -->
       {% if session.get('user') %}
       <nav class="hidden md:flex items-center space-x-1">
-        <a href="{{ url_for('home') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium {% if request.path == '/home' %}bg-slate-800 text-cyan-400 border border-slate-700/80{% else %}text-slate-300 hover:text-white hover:bg-slate-800/50{% endif %} transition">
+        <a href="{{ url_for('home') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {% if request.path == '/home' %}bg-gradient-to-r from-sky-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm shadow-cyan-500/20{% else %}text-slate-300 hover:text-white hover:bg-slate-800/40{% endif %} transition">
           Dashboard
         </a>
-        <a href="{{ url_for('test_tapping') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium {% if request.path == '/test/tapping' %}bg-slate-800 text-cyan-400 border border-slate-700/80{% else %}text-slate-300 hover:text-white hover:bg-slate-800/50{% endif %} transition flex items-center space-x-1.5">
-          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        <a href="{{ url_for('profile') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {% if request.path == '/profile' %}bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm shadow-cyan-500/20{% else %}text-slate-300 hover:text-white hover:bg-slate-800/40{% endif %} transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+          </svg>
+          <span>Patient Profile</span>
+        </a>
+        <a href="{{ url_for('test_tapping') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {% if request.path == '/test/tapping' %}bg-gradient-to-r from-sky-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm shadow-cyan-500/20{% else %}text-slate-300 hover:text-white hover:bg-slate-800/40{% endif %} transition flex items-center space-x-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
           <span>Stage 1: Finger Tapping</span>
         </a>
-        <a href="{{ url_for('test_tremor') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium {% if request.path == '/test/tremor' %}bg-slate-800 text-rose-400 border border-slate-700/80{% else %}text-slate-300 hover:text-white hover:bg-slate-800/50{% endif %} transition flex items-center space-x-1.5">
-          <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+        <a href="{{ url_for('test_tremor') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold {% if request.path == '/test/tremor' %}bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-teal-300 border border-teal-400/40 shadow-sm shadow-teal-500/20{% else %}text-slate-300 hover:text-white hover:bg-slate-800/40{% endif %} transition flex items-center space-x-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
           <span>Stage 2: Postural Tremor</span>
         </a>
       </nav>
@@ -105,24 +267,24 @@
       <!-- User Profile / Session Actions -->
       <div class="flex items-center space-x-3">
         {% if session.get('user') %}
-          <div class="hidden sm:flex items-center bg-slate-900/90 border border-slate-800 rounded-full px-3 py-1.5 space-x-2.5">
-            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xs font-semibold">
+          <a href="{{ url_for('profile') }}" class="hidden sm:flex items-center bg-ocean-abyss/80 hover:bg-ocean-deep border border-cyan-500/30 hover:border-cyan-400/60 rounded-full px-3 py-1 space-x-2 transition group shadow-sm">
+            <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500 text-slate-950 font-bold flex items-center justify-center text-xs group-hover:scale-105 transition-transform">
               {{ session.get('user').get('name', 'P')[0] }}
             </div>
             <div class="text-left text-xs leading-tight">
-              <span class="font-medium text-slate-200 block">{{ session.get('user').get('name') }}</span>
-              <span class="text-slate-400 text-[11px] font-mono">{{ session.get('user').get('patient_id') }}</span>
+              <span class="font-semibold text-slate-100 group-hover:text-cyan-300 block transition-colors">{{ session.get('user').get('name') }}</span>
+              <span class="text-cyan-300 text-[10px] font-mono">{{ session.get('user').get('patient_id') }}</span>
             </div>
-          </div>
-          <a href="{{ url_for('logout') }}" class="text-xs px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+          </a>
+          <a href="{{ url_for('logout') }}" class="text-xs px-3 py-1.5 rounded-lg border border-slate-700/80 hover:border-cyan-500/40 bg-ocean-deep/80 hover:bg-ocean-surf text-slate-300 hover:text-white transition">
             Sign Out
           </a>
         {% else %}
-          <a href="{{ url_for('login') }}" class="text-xs px-3.5 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">
+          <a href="{{ url_for('login') }}" class="text-xs px-3.5 py-1.5 rounded-lg border border-cyan-500/30 hover:border-cyan-400 bg-ocean-deep/80 hover:bg-ocean-surf text-slate-200 font-medium transition">
             Sign In
           </a>
-          <a href="{{ url_for('demo_login') }}" class="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-bold hover:brightness-110 shadow-sm transition">
-            Demo Login
+          <a href="{{ url_for('demo_login') }}" class="text-xs px-3.5 py-1.5 rounded-lg btn-dive-gradient">
+            ⚡ Demo Patient Login
           </a>
         {% endif %}
       </div>
@@ -134,7 +296,7 @@
     {% if messages %}
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
         {% for category, message in messages %}
-          <div class="p-3.5 rounded-xl border text-sm flex items-center justify-between {% if category == 'error' %}bg-rose-950/60 border-rose-800/80 text-rose-200{% elif category == 'success' %}bg-emerald-950/60 border-emerald-800/80 text-emerald-200{% else %}bg-slate-800/80 border-slate-700 text-slate-200{% endif %}">
+          <div class="p-3.5 rounded-xl border text-xs sm:text-sm flex items-center justify-between {% if category == 'error' %}bg-rose-950/70 border-rose-600/80 text-rose-200{% else %}bg-emerald-950/70 border-emerald-600/80 text-emerald-200{% endif %}">
             <span>{{ message }}</span>
             <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white">&times;</button>
           </div>
@@ -148,17 +310,19 @@
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Clinical Footer -->
-  <footer class="border-t border-slate-800/80 bg-slate-950/60 py-6 text-xs text-slate-500">
+  <!-- Clinical Ocean Footer -->
+  <footer class="border-t border-cyan-500/20 bg-ocean-abyss/85 py-6 text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center space-x-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-        <span>Storage Engine: <strong>{{ db_backend or 'Local SQLite (patients.db)' }}</strong></span>
-        <span class="text-slate-600">|</span>
-        <span>MDS-UPDRS Protocol: Part III Motor Examination (3.4 & 3.15)</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 inline-block animate-ping"></span>
+        <span class="text-slate-300">Technica 2026: <strong>Dare to Dive</strong></span>
+        <span class="text-slate-600">&bull;</span>
+        <span class="text-cyan-300 font-medium">🌊 Abyssal Ocean Motor Intelligence</span>
+        <span class="text-slate-600">&bull;</span>
+        <span>Storage: <strong>Local SQLite (patients.db)</strong></span>
       </div>
-      <div>
-        <span>Research & Clinical Demonstration Tool &bull; Calibrated at 30.0 Hz</span>
+      <div class="text-cyan-300/80 font-mono text-[11px]">
+        <span>Calibrated at 30.0 Hz &bull; MDS-UPDRS Part III Motor Examination</span>
       </div>
     </div>
   </footer>

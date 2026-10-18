@@ -159,6 +159,22 @@ class StreamManager:
                 self.tremor_session.reset()
                 self.win_tremor.clear()
 
+    def sync_ai_tremor_result(self, ai_result: Dict[str, Any]):
+        """Synchronizes Gemini AI Clinical Summary classification and score into session results."""
+        with self.lock:
+            if self.tremor_session and self.tremor_session.results:
+                if "score" in ai_result and ai_result["score"] is not None:
+                    self.tremor_session.results.score = int(ai_result["score"])
+                if "label" in ai_result and ai_result["label"]:
+                    self.tremor_session.results.label = str(ai_result["label"])
+                if "is_elevated_risk" in ai_result and ai_result["is_elevated_risk"] is not None:
+                    self.tremor_session.results.is_elevated_risk = bool(ai_result["is_elevated_risk"])
+                if "risk_badge" in ai_result and ai_result["risk_badge"]:
+                    self.tremor_session.results.risk_badge = str(ai_result["risk_badge"])
+                if "tremor_type" in ai_result and ai_result["tremor_type"]:
+                    self.tremor_session.results.tremor_type = str(ai_result["tremor_type"])
+
+
     def _compute_live_tapping_telemetry(self) -> Dict[str, Any]:
         """Calculates instantaneous tap rate, aperture, running tap count, and recent trace."""
         # Use active trial buffer if countdown is running, else rolling window

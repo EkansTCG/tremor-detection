@@ -6,9 +6,9 @@
 <div class="space-y-6">
 
   <!-- Header & Breadcrumbs -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ocean-800/80">
     <div class="flex items-center space-x-3">
-      <a href="{{ url_for('home') }}" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
+      <a href="{{ url_for('home') }}" class="p-2 rounded-xl bg-ocean-900/80 border border-ocean-700/60 text-slate-400 hover:text-white hover:border-ribbon-400/50 hover:shadow-pink-glow transition">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
@@ -16,7 +16,7 @@
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-xl font-bold text-white tracking-tight">Stage 1: Bradykinesia Finger Tapping Test</h1>
-          <span class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-semibold font-mono">
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-ocean-500/15 border border-ocean-cyan/40 text-ocean-cyan font-semibold font-mono">
             MDS-UPDRS 3.4
           </span>
         </div>
@@ -26,11 +26,11 @@
 
     <!-- Live Status Pill -->
     <div class="flex items-center space-x-3">
-      <div id="statusBadge" class="px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 flex items-center space-x-2">
+      <div id="statusBadge" class="px-3.5 py-1.5 rounded-full bg-ocean-900/90 border border-ocean-700/70 text-xs font-semibold text-slate-300 flex items-center space-x-2">
         <span id="statusIndicator" class="w-2 h-2 rounded-full bg-amber-400"></span>
         <span id="statusText">AWAITING START</span>
       </div>
-      <a href="{{ url_for('home') }}" class="text-xs px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+      <a href="{{ url_for('home') }}" class="text-xs px-3.5 py-1.5 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-slate-300 border border-ocean-700/80 transition hover:text-white">
         Back to Home
       </a>
     </div>
@@ -43,44 +43,44 @@
     <div class="lg:col-span-8 space-y-4">
       
       <!-- Video Container -->
-      <div class="glass-panel rounded-2xl p-2 border border-slate-800 shadow-2xl relative overflow-hidden bg-slate-950 group">
+      <div class="glass-card rounded-2xl p-2.5 border border-ribbon-400/25 shadow-2xl relative overflow-hidden group">
         <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
           <img id="videoFeed" src="{{ url_for('video_feed', test_type='tapping') }}"
                class="w-full h-full object-cover select-none"
                alt="Stage 1 Finger Tapping MJPEG Stream">
           
           <!-- Live Overlay Timer (Top Right) -->
-          <div id="streamTimerOverlay" class="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/30 text-cyan-300 font-mono text-sm font-bold shadow-lg flex items-center space-x-2">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <div id="streamTimerOverlay" class="absolute top-4 right-4 bg-ocean-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-ribbon-400/35 text-ribbon-300 font-mono text-sm font-bold shadow-lg flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-ocean-cyan animate-pulse"></span>
             <span id="overlayTimerText">10.0s</span>
           </div>
         </div>
 
         <!-- Progress Bar Under Video -->
-        <div class="w-full bg-slate-900 h-1.5 mt-2 rounded-full overflow-hidden">
-          <div id="trialProgressBar" class="h-full bg-cyan-400 w-0 transition-all duration-150"></div>
+        <div class="w-full bg-ocean-950 h-2 mt-2 rounded-full overflow-hidden">
+          <div id="trialProgressBar" class="h-full bg-gradient-to-r from-ocean-cyan via-ocean-wave to-ribbon-pink w-0 transition-all duration-150"></div>
         </div>
       </div>
 
       <!-- Action Bar -->
-      <div class="glass-panel rounded-xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div class="glass-card rounded-xl p-4 border border-ocean-800/80 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center space-x-2">
-          <button id="btnStartTest" onclick="startTrial()" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs tracking-wide shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all">
+          <button id="btnStartTest" onclick="startTrial()" class="btn-dive-gradient px-5 py-2.5 rounded-xl font-bold text-xs tracking-wide flex items-center space-x-2 transition-all">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
             </svg>
             <span>Start 10s Assessment</span>
           </button>
-          <button id="btnResetTest" onclick="resetTrial()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition">
+          <button id="btnResetTest" onclick="resetTrial()" class="px-4 py-2.5 rounded-xl bg-ocean-900/80 hover:bg-ocean-800 text-slate-200 border border-ocean-700/80 font-semibold text-xs transition">
             ↺ Reset
           </button>
         </div>
 
         <div class="flex items-center space-x-2 text-xs text-slate-400">
-          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">SPACE</kbd>
+          <kbd class="px-2 py-1 rounded bg-ocean-950 border border-ocean-800 text-slate-300 font-mono text-[10px]">SPACE</kbd>
           <span>to Start</span>
           <span class="text-slate-600">&bull;</span>
-          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">R</kbd>
+          <kbd class="px-2 py-1 rounded bg-ocean-950 border border-ocean-800 text-slate-300 font-mono text-[10px]">R</kbd>
           <span>to Retry</span>
         </div>
       </div>
@@ -91,8 +91,8 @@
     <div class="lg:col-span-4 space-y-4">
 
       <!-- Protocol Guide Card -->
-      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 flex items-center gap-1.5">
+      <div class="glass-card rounded-2xl p-5 border border-ocean-cyan/25 shadow-xl">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-ocean-cyan mb-2 flex items-center gap-1.5">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
@@ -104,22 +104,22 @@
       </div>
 
       <!-- Real-Time Kinematics Card -->
-      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+      <div class="glass-card rounded-2xl p-5 border border-ocean-800/90 shadow-xl space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-ocean-cyan animate-pulse"></span>
             Live Kinematic Telemetry
           </h3>
-          <span id="liveApertureBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/30 text-cyan-300">
+          <span id="liveApertureBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-ocean-950 border border-ocean-cyan/30 text-ocean-cyan">
             Aperture: <strong id="valAperture">--</strong>
           </span>
         </div>
 
         <!-- Synced Live Waveform Canvas -->
-        <div class="bg-slate-950 rounded-xl p-3 border border-slate-800/90 relative overflow-hidden">
+        <div class="bg-ocean-950/90 rounded-xl p-3 border border-ocean-800/90 relative overflow-hidden">
           <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-1.5">
-            <span class="text-cyan-400 font-semibold">APERTURE WAVEFORM (SYNCED)</span>
-            <span>Ref: 1.0 (Green)</span>
+            <span class="text-ocean-cyan font-semibold">APERTURE WAVEFORM (SYNCED)</span>
+            <span class="text-teal-400">Ref: 1.0 (Calm Target)</span>
           </div>
           <canvas id="liveApertureCanvas" height="90" class="w-full block"></canvas>
           <div class="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
@@ -131,19 +131,19 @@
         
         <!-- Live Metric Tiles -->
         <div class="grid grid-cols-2 gap-2 text-center">
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Active Tap Speed</span>
-            <span id="liveRate" class="text-lg font-bold text-cyan-400 font-mono">-- <span class="text-xs font-normal">Hz</span></span>
+            <span id="liveRate" class="text-lg font-bold text-ocean-cyan font-mono">-- <span class="text-xs font-normal">Hz</span></span>
           </div>
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Fatigue Decr.</span>
-            <span id="liveDecrement" class="text-lg font-bold text-amber-400 font-mono">-- %</span>
+            <span id="liveDecrement" class="text-lg font-bold text-amber-300 font-mono">-- %</span>
           </div>
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Total Taps</span>
             <span id="liveTaps" class="text-lg font-bold text-white font-mono">--</span>
           </div>
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Hesitation (CV)</span>
             <span id="liveCV" class="text-lg font-bold text-slate-300 font-mono">--</span>
           </div>
@@ -151,50 +151,51 @@
       </div>
 
       <!-- Stage 1 Scorecard (Dynamically populated on completion) -->
-      <div id="scorecardPanel" class="hidden glass-panel rounded-2xl p-5 border border-cyan-500/40 shadow-2xl space-y-4 glow-cyan transition-all duration-300">
+      <div id="scorecardPanel" class="hidden glass-card rounded-2xl p-5 border border-ribbon-400/35 shadow-2xl space-y-4 transition-all duration-300 relative">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-ocean-cyan via-ocean-wave to-ribbon-pink rounded-t-2xl"></div>
         
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center justify-between pb-3 border-b border-ocean-800/80">
           <div>
             <h3 class="text-sm font-bold text-white">Stage 1 Clinical Scorecard</h3>
-            <span class="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
+            <span class="text-[11px] text-teal-400 flex items-center gap-1 mt-0.5">
               <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
               </svg>
               Persisted to Patient Record
             </span>
           </div>
-          <span id="scoreBadge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-cyan-950 text-cyan-300 border border-cyan-500">
+          <span id="scoreBadge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-ocean-950 text-ocean-cyan border border-ocean-cyan font-mono">
             Score --/4
           </span>
         </div>
 
         <!-- Clinical Risk Classification Banner -->
-        <div id="riskBanner" class="p-3.5 rounded-xl border text-center shadow-md">
+        <div id="riskBanner" class="p-3.5 rounded-xl border text-center shadow-md transition-all">
           <span class="text-[10px] uppercase tracking-wider block font-medium opacity-80">Clinical Risk Classification</span>
           <span id="riskLabel" class="text-sm font-bold mt-0.5 block">NORMAL</span>
         </div>
 
         <!-- Score Rating Banner -->
-        <div id="scorecardBanner" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
+        <div id="scorecardBanner" class="p-3.5 rounded-xl bg-ocean-950/90 border border-ocean-800 text-center">
           <span class="text-[10px] text-slate-400 uppercase tracking-wider block">MDS-UPDRS Bradykinesia Rating</span>
           <span id="scorecardLabel" class="text-base font-bold text-white mt-0.5 block">Analyzing...</span>
         </div>
 
         <!-- Metrics Summary Grid -->
         <div class="space-y-2 text-xs">
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+          <div class="flex justify-between py-1.5 border-b border-ocean-900/80">
             <span class="text-slate-400">Final Tap Speed:</span>
             <span id="scRate" class="font-mono font-bold text-white">-- Hz</span>
           </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+          <div class="flex justify-between py-1.5 border-b border-ocean-900/80">
             <span class="text-slate-400">Fatigue Decrement:</span>
             <span id="scDecrement" class="font-mono font-bold text-white">-- %</span>
           </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+          <div class="flex justify-between py-1.5 border-b border-ocean-900/80">
             <span class="text-slate-400">Amplitude Decay Slope:</span>
             <span id="scSlope" class="font-mono font-bold text-white">-- /s</span>
           </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+          <div class="flex justify-between py-1.5 border-b border-ocean-900/80">
             <span class="text-slate-400">Total Count & Hesitations:</span>
             <span id="scTaps" class="font-mono font-bold text-white">-- taps (CV: --)</span>
           </div>
@@ -202,10 +203,10 @@
 
         <!-- Retry and Return Actions -->
         <div class="pt-2 flex items-center space-x-2">
-          <button onclick="startTrial()" class="flex-1 py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs tracking-wide shadow-md transition">
+          <button onclick="startTrial()" class="flex-1 py-2.5 px-3 rounded-xl btn-dive-gradient text-white font-bold text-xs tracking-wide shadow-md transition">
             ↺ Retry Test
           </button>
-          <a href="{{ url_for('home') }}" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs text-center transition">
+          <a href="{{ url_for('home') }}" class="flex-1 py-2.5 px-3 rounded-xl bg-ocean-900/80 hover:bg-ocean-800 text-slate-200 border border-ocean-700/80 font-semibold text-xs text-center transition">
             Back to Home &rarr;
           </a>
         </div>
@@ -235,17 +236,55 @@
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
+  // Strict 4-Tier Clinical Color Helper (Scores 1 & 2 are Sunlit Gold & Sunset Orange, NOT Red!)
+  function getClinicalTierStyle(score) {
+    const s = Math.max(0, Math.min(4, parseInt(score) || 0));
+    if (s === 0) {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-teal-500/15 text-teal-300 border border-teal-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-teal-500/15 border border-teal-500/40 text-teal-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-teal-400 mt-1 block',
+        textClass: 'text-teal-400 font-bold',
+        borderColor: '#14b8a6'
+      };
+    } else if (s === 1) {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-amber-500/18 text-amber-300 border border-amber-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-amber-500/18 border border-amber-500/40 text-amber-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-amber-400 mt-1 block',
+        textClass: 'text-amber-400 font-bold',
+        borderColor: '#eab308'
+      };
+    } else if (s === 2) {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-orange-500/18 text-orange-300 border border-orange-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-orange-500/18 border border-orange-500/40 text-orange-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-orange-400 mt-1 block',
+        textClass: 'text-orange-400 font-bold',
+        borderColor: '#f97316'
+      };
+    } else {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-rose-500/22 text-rose-300 border border-rose-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-rose-500/22 border border-rose-500/40 text-rose-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-rose-400 mt-1 block',
+        textClass: 'text-rose-400 font-bold',
+        borderColor: '#f43f5e'
+      };
+    }
+  }
+
   function drawLiveApertureWaveform(trace) {
     if (!ctx || !canvas) return;
     const w = canvas.width;
     const h = canvas.height;
 
-    // Clear background
-    ctx.fillStyle = '#090d16';
+    // Ocean Abyssal Navy background
+    ctx.fillStyle = '#061326';
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    // Subtle cyan grid lines
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let y = 15; y < h; y += 25) {
@@ -254,11 +293,10 @@
     }
     ctx.stroke();
 
-    // Reference Line at 1.0 (Target full aperture)
-    // Scale: y=0 maps to aperture 1.8, y=h maps to aperture 0.0
+    // Reference Line at 1.0 (Target full aperture) with Ocean Teal
     const maxAp = 1.8;
     const refY = h - (1.0 / maxAp) * h;
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+    ctx.strokeStyle = 'rgba(20, 184, 166, 0.6)';
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(0, refY);
@@ -267,8 +305,8 @@
     ctx.setLineDash([]);
 
     if (!trace || trace.length < 2) {
-      ctx.fillStyle = '#475569';
-      ctx.font = '11px Inter, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px Outfit, Inter, sans-serif';
       ctx.fillText('Awaiting hand in webcam view...', 10, h / 2 + 4);
       return;
     }
@@ -284,15 +322,15 @@
       else ctx.lineTo(px, py);
     });
 
-    // Glowing cyan line
+    // Glowing Ocean Wave Cyan Line
     ctx.strokeStyle = '#00e5ff';
     ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#00e5ff';
+    ctx.shadowColor = '#38bdf8';
     ctx.shadowBlur = 8;
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Draw active dot at newest sample
+    // Draw active dot at newest sample with Ribbon Pink accent
     const lastVal = trace[trace.length - 1];
     const lastX = (trace.length - 1) * step;
     const lastY = h - (Math.min(lastVal, maxAp) / maxAp) * (h - 10) - 5;
@@ -301,7 +339,7 @@
     ctx.beginPath();
     ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = '#ec4899';
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -343,12 +381,12 @@
       const progressBar = document.getElementById('trialProgressBar');
 
       if (data.state === 'COUNTDOWN') {
-        statusIndicator.className = 'w-2 h-2 rounded-full bg-cyan-400 animate-ping';
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-ocean-cyan animate-ping';
         statusText.innerText = `ACTIVE (${data.time_remaining}s)`;
         overlayTimer.innerText = `${data.time_remaining}s`;
         progressBar.style.width = `${data.progress * 100}%`;
       } else if (data.state === 'COMPLETED') {
-        statusIndicator.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-teal-400';
         statusText.innerText = 'COMPLETED';
         overlayTimer.innerText = '0.0s';
         progressBar.style.width = '100%';
@@ -375,7 +413,7 @@
         if (lm.rate > 0) {
           document.getElementById('liveRate').innerHTML = `${lm.rate} <span class="text-xs font-normal">Hz</span>`;
         } else if (data.state === 'COUNTDOWN') {
-          document.getElementById('liveRate').innerHTML = `<span class="text-xs text-cyan-300">Tapping...</span>`;
+          document.getElementById('liveRate').innerHTML = `<span class="text-xs text-ocean-cyan">Tapping...</span>`;
         } else {
           document.getElementById('liveRate').innerHTML = `0.0 <span class="text-xs font-normal">Hz</span>`;
         }
@@ -412,30 +450,26 @@
     const card = document.getElementById('scorecardPanel');
     card.classList.remove('hidden');
 
+    // Auto-scroll smoothly to scorecard on completion
+    setTimeout(() => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+
+    const score = res.score !== undefined ? res.score : 0;
+    const tierStyle = getClinicalTierStyle(score);
+
     const badge = document.getElementById('scoreBadge');
-    badge.innerText = `Score ${res.score}/4`;
+    badge.innerText = `Score ${score}/4`;
+    badge.className = tierStyle.scoreBadgeClass;
 
     const label = document.getElementById('scorecardLabel');
-    label.innerText = `MDS-UPDRS Score ${res.score} (${res.label})`;
+    label.innerText = `MDS-UPDRS Score ${score} (${res.label || 'Assessed'})`;
 
     const riskBanner = document.getElementById('riskBanner');
     const riskLabel = document.getElementById('riskLabel');
 
-    if (res.is_elevated_risk) {
-      riskBanner.className = 'p-3.5 rounded-xl bg-rose-950/90 border border-rose-500/80 text-rose-200 text-center shadow-lg';
-      riskLabel.innerText = res.risk_badge || 'ELEVATED RISK / ASYMMETRY DETECTED';
-    } else {
-      riskBanner.className = 'p-3.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-200 text-center shadow-lg';
-      riskLabel.innerText = res.risk_badge || 'NORMAL (NO BRADYKINESIA DETECTED)';
-    }
-
-    if (res.score <= 1) {
-      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-500';
-    } else if (res.score === 2) {
-      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-amber-950 text-amber-300 border border-amber-500';
-    } else {
-      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-rose-950 text-rose-300 border border-rose-500';
-    }
+    riskBanner.className = tierStyle.riskBannerClass;
+    riskLabel.innerText = res.risk_badge || (score >= 3 ? 'ELEVATED RISK / ASYMMETRY DETECTED' : (score > 0 ? 'MILD BRADYKINESIA EMERGENCE' : 'NORMAL (CALM WATERS)'));
 
     document.getElementById('scRate').innerText = `${res.rate} taps/s`;
     document.getElementById('scDecrement').innerText = `${res.decrement_pct} %`;

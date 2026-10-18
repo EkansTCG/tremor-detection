@@ -81,6 +81,21 @@ def init_db() -> None:
         """)
         conn.commit()
 
+        # Ensure extended profile columns exist
+        profile_cols = [
+            ("neurologist", "TEXT", "'Dr. Sarah Lin, MD (Movement Disorders Clinic, Johns Hopkins)'"),
+            ("medications", "TEXT", "'Carbidopa/Levodopa 25/100mg TID, Rasagiline 1mg daily'"),
+            ("clinical_stage", "TEXT", "'Hoehn & Yahr Stage II'"),
+            ("emergency_contact", "TEXT", "'Thomas Vance (Spouse) — (555) 234-5678'"),
+            ("phone", "TEXT", "'(555) 891-4432'")
+        ]
+        for col_name, col_type, default_val in profile_cols:
+            try:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type} DEFAULT {default_val}")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
     # Pre-seed demo user if not exists
     seed_demo_patient_if_needed()
 
@@ -347,14 +362,39 @@ def get_demo_user() -> Dict[str, Any]:
 
 
 def get_user_profile(user_id: str) -> Optional[Dict[str, Any]]:
-    """Retrieve user metadata by ID."""
+    """Retrieve full user metadata by ID."""
+    init_db()
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, email, name, patient_id, age, gender, diagnosis, created_at FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
-            return dict(row)
+            d = dict(row)
+            d.pop("password_hash", None)
+            return d
     return None
+
+
+def update_user_profile(user_id: str, updates: Dict[str, Any]) -> bool:
+    """Updates user profile details."""
+    init_db()
+    allowed_keys = [
+        "name", "age", "gender", "diagnosis",
+        "neurologist", "medications", "clinical_stage",
+        "emergency_contact", "phone"
+    ]
+    valid_updates = {k: v for k, v in updates.items() if k in allowed_keys and v is not None}
+    if not valid_updates:
+        return False
+
+    set_clause = ", ".join([f"{k} = ?" for k in valid_updates.keys()])
+    values = list(valid_updates.values()) + [user_id]
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"UPDATE users SET {set_clause} WHERE id = ?", tuple(values))
+        conn.commit()
+    return True
 
 
 def save_assessment(user_id: str, assessment_data: Dict[str, Any]) -> str:
@@ -392,6 +432,40 @@ def save_assessment(user_id: str, assessment_data: Dict[str, Any]) -> str:
         conn.commit()
 
     return assessment_id
+
+
+def update_latest_tremor_assessment(user_id: str, updates: Dict[str, Any]) -> bool:
+    """Updates the most recent tremor assessment record with AI analysis results."""
+    init_db()
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id FROM assessments 
+            WHERE user_id = ? AND test_type = 'tremor' 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+        """, (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            return False
+        aid = row["id"]
+
+        score = updates.get("score")
+        label = updates.get("label")
+        is_elevated = 1 if updates.get("is_elevated_risk") else 0
+        notes = updates.get("tremor_type") or updates.get("notes") or ""
+
+        cursor.execute("""
+            UPDATE assessments 
+            SET score = COALESCE(?, score),
+                label = COALESCE(?, label),
+                is_elevated_risk = ?,
+                notes = ?
+            WHERE id = ?
+        """, (score, label, is_elevated, notes, aid))
+        conn.commit()
+    return True
+
 
 
 def get_user_assessments(user_id: str, limit: int = 50) -> List[Dict[str, Any]]:

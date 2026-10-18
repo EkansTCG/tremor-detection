@@ -24,6 +24,7 @@ from flask import (Flask, render_template, request, redirect,
 from dotenv import load_dotenv
 
 import auth_db
+import gemini_service
 from camera_stream import StreamManager
 
 load_dotenv()
@@ -134,6 +135,66 @@ def home():
     stream_manager.set_user(user["id"])
     assessments = auth_db.get_user_assessments(user["id"], limit=50)
     return render_template("dashboard.html", user=user, assessments=assessments)
+
+
+@app.route("/profile")
+@login_required
+def profile():
+    user = session["user"]
+    stream_manager.set_user(user["id"])
+    full_profile = auth_db.get_user_profile(user["id"]) or user
+    session["user"] = full_profile
+    assessments = auth_db.get_user_assessments(user["id"], limit=100)
+    return render_template("profile.html", user=full_profile, assessments=assessments)
+
+
+@app.route("/api/profile/update", methods=["POST"])
+@login_required
+def api_update_profile():
+    user = session["user"]
+    data = request.get_json() or {}
+    ok = auth_db.update_user_profile(user["id"], data)
+    if ok:
+        updated = auth_db.get_user_profile(user["id"]) or user
+        session["user"] = updated
+        return jsonify({"success": True, "user": updated})
+    return jsonify({"success": False, "error": "Unable to update profile"}), 400
+
+
+@app.route("/api/gemini_summary/tremor", methods=["POST"])
+@login_required
+def api_gemini_tremor_summary():
+    user = session.get("user", {})
+    patient_name = user.get("name", "Patient")
+    data = request.get_json() or {}
+    
+    # AI directly analyzes raw kinematic data and determines clinical score, severity & recommendations
+    ai_result = gemini_service.analyze_tremor_data_with_ai(data, patient_name=patient_name)
+    
+    # Sync session results with the AI output so OpenCV HUD and Web UI display identical metrics
+    stream_manager.sync_ai_tremor_result(ai_result)
+
+    # Persist the AI-determined clinical score and classification into the patient's record
+    if user.get("id"):
+        auth_db.update_latest_tremor_assessment(user["id"], {
+            "score": ai_result.get("score"),
+            "label": ai_result.get("label"),
+            "is_elevated_risk": ai_result.get("is_elevated_risk"),
+            "risk_badge": ai_result.get("risk_badge"),
+            "tremor_type": ai_result.get("tremor_type")
+        })
+    
+    return jsonify({"success": True, "summary": ai_result})
+
+
+@app.route("/api/gemini_summary/patient", methods=["GET"])
+@login_required
+def api_gemini_patient_overview():
+    user = session["user"]
+    full_profile = auth_db.get_user_profile(user["id"]) or user
+    assessments = auth_db.get_user_assessments(user["id"], limit=100)
+    overview = gemini_service.generate_patient_ai_overview(full_profile, assessments)
+    return jsonify({"success": True, "overview": overview})
 
 
 @app.route("/test/tapping")

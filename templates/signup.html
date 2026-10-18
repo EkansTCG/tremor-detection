@@ -7,29 +7,34 @@
   <div class="w-full max-w-lg">
 
     <div class="text-center mb-6">
-      <h1 class="text-2xl font-bold text-white tracking-tight">Register New Patient Record</h1>
-      <p class="text-sm text-slate-400 mt-1">Enroll subject for automated MDS-UPDRS motor tracking</p>
+      <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 via-sky-500 to-pink-500 items-center justify-center text-white font-bold shadow-xl shadow-pink-500/25 mb-3 wave-float">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white tracking-tight font-heading">Register New Patient Record</h1>
+      <p class="text-xs text-cyan-300/80 mt-1">Enroll subject for automated MDS-UPDRS motor tracking &bull; Dare to Dive</p>
     </div>
 
-    <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-800">
+    <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl border border-pink-500/30">
       <form action="{{ url_for('signup') }}" method="POST" class="space-y-4">
         
         <div>
           <label for="name" class="block text-xs font-medium text-slate-300 mb-1.5">Patient Full Name</label>
           <input type="text" id="name" name="name" required placeholder="e.g. Johnathan Doe"
-                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                 class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label for="email" class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
             <input type="email" id="email" name="email" required placeholder="patient@clinic.org"
-                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                   class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
           </div>
           <div>
             <label for="patient_id" class="block text-xs font-medium text-slate-300 mb-1.5">Patient MRN / ID</label>
             <input type="text" id="patient_id" name="patient_id" placeholder="Auto-generated if empty"
-                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                   class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
           </div>
         </div>
 
@@ -37,11 +42,11 @@
           <div>
             <label for="age" class="block text-xs font-medium text-slate-300 mb-1.5">Age</label>
             <input type="number" id="age" name="age" value="65" min="1" max="120"
-                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                   class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
           </div>
           <div>
             <label for="gender" class="block text-xs font-medium text-slate-300 mb-1.5">Gender</label>
-            <select id="gender" name="gender" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+            <select id="gender" name="gender" class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
               <option value="Female">Female</option>
               <option value="Male">Male</option>
               <option value="Other">Other</option>
@@ -53,23 +58,23 @@
         <div>
           <label for="diagnosis" class="block text-xs font-medium text-slate-300 mb-1.5">Clinical Indication / Diagnosis</label>
           <input type="text" id="diagnosis" name="diagnosis" value="Suspected Bradykinesia / Essential Tremor Differential"
-                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                 class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
         </div>
 
         <div>
           <label for="password" class="block text-xs font-medium text-slate-300 mb-1.5">Set Password</label>
           <input type="password" id="password" name="password" required placeholder="••••••••••••"
-                 class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                 class="w-full px-3.5 py-2.5 rounded-xl bg-ocean-abyss/90 border border-sky-500/30 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition">
         </div>
 
-        <button type="submit" class="w-full py-3 px-4 rounded-xl font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-teal-300 hover:brightness-110 shadow-lg shadow-cyan-500/20 text-sm transition">
-          Complete Registration & Proceed
+        <button type="submit" class="w-full py-3.5 px-4 rounded-xl font-bold text-white btn-dive-gradient shadow-lg text-sm transition">
+          Complete Registration & Proceed &rarr;
         </button>
       </form>
 
-      <div class="mt-6 pt-5 border-t border-slate-800 text-center text-xs text-slate-400">
+      <div class="mt-6 pt-5 border-t border-pink-500/20 text-center text-xs text-slate-300">
         Already have a patient record? 
-        <a href="{{ url_for('login') }}" class="text-cyan-400 hover:text-cyan-300 font-medium ml-1">
+        <a href="{{ url_for('login') }}" class="text-pink-400 hover:text-pink-300 font-semibold ml-1 transition-colors">
           Back to Sign In &rarr;
         </a>
       </div>

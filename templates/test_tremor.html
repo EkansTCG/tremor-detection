@@ -2,13 +2,65 @@
 
 {% block title %}Stage 2: Postural Tremor Spectral Test (MDS-UPDRS 3.15){% endblock %}
 
+{% block head %}
+<!-- Marked.js for Gemini AI Markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  .gemini-summary-card {
+    background: linear-gradient(135deg, rgba(6, 19, 38, 0.94) 0%, rgba(11, 33, 63, 0.95) 50%, rgba(15, 46, 90, 0.92) 100%);
+    border: 1px solid rgba(244, 114, 182, 0.35);
+    position: relative;
+    box-shadow: 0 20px 40px -15px rgba(236, 72, 153, 0.2), 0 0 30px rgba(14, 165, 233, 0.15);
+  }
+  .gemini-summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8, #f472b6, #ec4899);
+    border-radius: 1rem 1rem 0 0;
+  }
+  .prose-ai h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fbcfe8;
+    margin-top: 0.75rem;
+    margin-bottom: 0.3rem;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .prose-ai p {
+    margin-bottom: 0.5rem;
+    color: #cbd5e1;
+    line-height: 1.55;
+  }
+  .prose-ai ul {
+    list-style-type: disc;
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose-ai li {
+    margin-bottom: 0.3rem;
+    color: #e2e8f0;
+  }
+  .prose-ai strong {
+    color: #ffffff;
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="space-y-6">
 
   <!-- Header & Breadcrumbs -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ocean-800/80">
     <div class="flex items-center space-x-3">
-      <a href="{{ url_for('home') }}" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
+      <a href="{{ url_for('home') }}" class="p-2 rounded-xl bg-ocean-900/80 border border-ocean-700/60 text-slate-400 hover:text-white hover:border-ribbon-400/50 hover:shadow-pink-glow transition">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
@@ -16,7 +68,7 @@
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-xl font-bold text-white tracking-tight">Stage 2: Postural Tremor Spectral Test</h1>
-          <span class="text-xs px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-300 font-semibold font-mono">
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-ribbon-500/15 border border-ribbon-400/40 text-ribbon-300 font-semibold font-mono">
             MDS-UPDRS 3.15
           </span>
         </div>
@@ -26,11 +78,11 @@
 
     <!-- Live Status Pill -->
     <div class="flex items-center space-x-3">
-      <div id="statusBadge" class="px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 flex items-center space-x-2">
+      <div id="statusBadge" class="px-3.5 py-1.5 rounded-full bg-ocean-900/90 border border-ocean-700/70 text-xs font-semibold text-slate-300 flex items-center space-x-2">
         <span id="statusIndicator" class="w-2 h-2 rounded-full bg-amber-400"></span>
         <span id="statusText">AWAITING START</span>
       </div>
-      <a href="{{ url_for('home') }}" class="text-xs px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+      <a href="{{ url_for('home') }}" class="text-xs px-3.5 py-1.5 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-slate-300 border border-ocean-700/80 transition hover:text-white">
         Back to Home
       </a>
     </div>
@@ -43,44 +95,44 @@
     <div class="lg:col-span-8 space-y-4">
       
       <!-- Video Container -->
-      <div class="glass-panel rounded-2xl p-2 border border-slate-800 shadow-2xl relative overflow-hidden bg-slate-950 group">
+      <div class="glass-card rounded-2xl p-2.5 border border-ribbon-400/25 shadow-2xl relative overflow-hidden group">
         <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
           <img id="videoFeed" src="{{ url_for('video_feed', test_type='tremor') }}"
                class="w-full h-full object-cover select-none"
                alt="Stage 2 Postural Tremor MJPEG Stream">
           
           <!-- Live Overlay Timer (Top Right) -->
-          <div id="streamTimerOverlay" class="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-rose-500/30 text-rose-300 font-mono text-sm font-bold shadow-lg flex items-center space-x-2">
-            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+          <div id="streamTimerOverlay" class="absolute top-4 right-4 bg-ocean-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-ribbon-400/35 text-ribbon-300 font-mono text-sm font-bold shadow-lg flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-ribbon-400 animate-pulse"></span>
             <span id="overlayTimerText">10.0s</span>
           </div>
         </div>
 
         <!-- Progress Bar Under Video -->
-        <div class="w-full bg-slate-900 h-1.5 mt-2 rounded-full overflow-hidden">
-          <div id="trialProgressBar" class="h-full bg-rose-500 w-0 transition-all duration-150"></div>
+        <div class="w-full bg-ocean-950 h-2 mt-2 rounded-full overflow-hidden">
+          <div id="trialProgressBar" class="h-full bg-gradient-to-r from-ocean-cyan via-ocean-wave to-ribbon-pink w-0 transition-all duration-150"></div>
         </div>
       </div>
 
       <!-- Action Bar -->
-      <div class="glass-panel rounded-xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div class="glass-card rounded-xl p-4 border border-ocean-800/80 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center space-x-2">
-          <button id="btnStartTest" onclick="startTrial()" class="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs tracking-wide shadow-lg shadow-rose-500/20 flex items-center space-x-2 transition-all">
+          <button id="btnStartTest" onclick="startTrial()" class="btn-dive-gradient px-5 py-2.5 rounded-xl font-bold text-xs tracking-wide flex items-center space-x-2 transition-all">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
             </svg>
             <span>Start 10s Assessment</span>
           </button>
-          <button id="btnResetTest" onclick="resetTrial()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition">
+          <button id="btnResetTest" onclick="resetTrial()" class="px-4 py-2.5 rounded-xl bg-ocean-900/80 hover:bg-ocean-800 text-slate-200 border border-ocean-700/80 font-semibold text-xs transition">
             ↺ Reset
           </button>
         </div>
 
         <div class="flex items-center space-x-2 text-xs text-slate-400">
-          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">SPACE</kbd>
+          <kbd class="px-2 py-1 rounded bg-ocean-950 border border-ocean-800 text-slate-300 font-mono text-[10px]">SPACE</kbd>
           <span>to Start</span>
           <span class="text-slate-600">&bull;</span>
-          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">R</kbd>
+          <kbd class="px-2 py-1 rounded bg-ocean-950 border border-ocean-800 text-slate-300 font-mono text-[10px]">R</kbd>
           <span>to Retry</span>
         </div>
       </div>
@@ -91,8 +143,8 @@
     <div class="lg:col-span-4 space-y-4">
 
       <!-- Protocol Guide Card -->
-      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-2 flex items-center gap-1.5">
+      <div class="glass-card rounded-2xl p-5 border border-ribbon-400/25 shadow-xl">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-ribbon-400 mb-2 flex items-center gap-1.5">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
@@ -104,21 +156,21 @@
       </div>
 
       <!-- Real-Time Spectral Telemetry Card -->
-      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+      <div class="glass-card rounded-2xl p-5 border border-ocean-800/90 shadow-xl space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-ribbon-400 animate-pulse"></span>
             Live Spectral Telemetry
           </h3>
-          <span id="liveTremorBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-rose-500/30 text-rose-300">
+          <span id="liveTremorBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-ocean-950 border border-ribbon-400/30 text-ribbon-300">
             Height Y: <strong id="valTremorY">--</strong>
           </span>
         </div>
 
         <!-- Synced Live Waveform Canvas -->
-        <div class="bg-slate-950 rounded-xl p-3 border border-slate-800/90 relative overflow-hidden">
+        <div class="bg-ocean-950/90 rounded-xl p-3 border border-ocean-800/90 relative overflow-hidden">
           <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-1.5">
-            <span class="text-rose-400 font-semibold">GRAVITY DISPLACEMENT (SYNCED)</span>
+            <span class="text-ocean-cyan font-semibold">GRAVITY DISPLACEMENT (SYNCED)</span>
             <span>4–6 Hz Monitor</span>
           </div>
           <canvas id="liveTremorCanvas" height="90" class="w-full block"></canvas>
@@ -131,93 +183,128 @@
         
         <!-- Live Metric Tiles -->
         <div class="grid grid-cols-2 gap-2 text-center">
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Dominant Peak</span>
-            <span id="livePeak" class="text-lg font-bold text-rose-400 font-mono">-- <span class="text-xs font-normal">Hz</span></span>
+            <span id="livePeak" class="text-lg font-bold text-ocean-cyan font-mono">-- <span class="text-xs font-normal">Hz</span></span>
           </div>
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">4-6 Hz Power</span>
-            <span id="liveBand" class="text-lg font-bold text-purple-400 font-mono">-- %</span>
+            <span id="liveBand" class="text-lg font-bold text-ribbon-300 font-mono">-- %</span>
           </div>
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">RMS Magnitude</span>
             <span id="liveRMS" class="text-lg font-bold text-white font-mono">--</span>
           </div>
-          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Tremor Status</span>
             <span id="liveActive" class="text-xs font-bold text-slate-400 mt-1 block">--</span>
           </div>
         </div>
 
         <!-- Live Kinematic Excursion & Motion Classification Strip -->
-        <div class="bg-slate-950 rounded-xl p-2.5 border border-slate-800/80 flex items-center justify-between text-xs font-mono">
+        <div class="bg-ocean-950/80 rounded-xl p-2.5 border border-ocean-800/80 flex items-center justify-between text-xs font-mono">
           <div class="flex items-center space-x-2 text-slate-400">
-            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span class="w-2 h-2 rounded-full bg-ocean-cyan"></span>
             <span>Motion Pattern:</span>
           </div>
-          <span id="liveMotionType" class="text-cyan-300 font-bold">Awaiting hand...</span>
+          <span id="liveMotionType" class="text-ocean-cyan font-bold">Awaiting hand...</span>
         </div>
       </div>
 
-      <!-- Stage 2 Scorecard (Dynamically populated on completion) -->
-      <div id="scorecardPanel" class="hidden glass-panel rounded-2xl p-5 border border-rose-500/40 shadow-2xl space-y-4 glow-rose transition-all duration-300">
+      <!-- Stage 2 Results: Powered by Gemini 3.5 Flash Lite API -->
+      <div id="scorecardPanel" class="hidden gemini-summary-card rounded-2xl p-5 shadow-2xl space-y-4 transition-all duration-300">
         
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div>
-            <h3 class="text-sm font-bold text-white">Stage 2 Clinical Scorecard</h3>
-            <span class="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        <!-- Gemini 3.5 Flash Lite Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-ribbon-400/20">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-ocean-wave via-ribbon-pink to-ribbon-rose flex items-center justify-center text-white shadow-md shadow-pink-500/20">
+              <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L14.4 7.6L20 10L14.4 12.4L12 18L9.6 12.4L4 10L9.6 7.6L12 2Z"/>
               </svg>
-              Persisted to Patient Record
-            </span>
+            </div>
+            <div>
+              <div class="flex items-center space-x-1.5">
+                <h3 class="text-sm font-bold text-white tracking-tight">Gemini 3.5 Flash Lite</h3>
+                <span id="geminiModelChip" class="text-[10px] px-2 py-0.5 rounded-full bg-ribbon-500/20 border border-ribbon-400/40 text-ribbon-300 font-semibold uppercase">AI Clinical Summary</span>
+              </div>
+              <span class="text-[11px] text-teal-400 flex items-center gap-1 mt-0.5">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                Trial Persisted to Patient Record
+              </span>
+            </div>
           </div>
-          <span id="scoreBadge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-rose-950 text-rose-300 border border-rose-500">
+          <span id="scoreBadge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-ocean-950 border border-ribbon-400/50 text-ribbon-300 font-mono">
             Score --/4
           </span>
         </div>
 
-        <!-- Clinical Risk Badge -->
-        <div id="riskBanner" class="p-3.5 rounded-xl border text-center">
+        <!-- Clinical Risk Badge Banner -->
+        <div id="riskBanner" class="p-3.5 rounded-xl border text-center transition-all">
           <span class="text-[10px] uppercase tracking-wider block font-medium opacity-80">Pathological Tremor Classification</span>
           <span id="riskLabel" class="text-sm font-bold mt-0.5 block">Analyzing...</span>
         </div>
 
-        <!-- Metrics Summary Grid -->
-        <div class="space-y-2 text-xs">
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
-            <span class="text-slate-400">MDS-UPDRS 3.15 Rating:</span>
-            <span id="scRating" class="font-mono font-bold text-white">Score --/4 (--)</span>
+        <!-- Gemini AI Summary Section -->
+        <div class="space-y-2">
+          <!-- Loading Shimmer -->
+          <div id="geminiSummaryLoading" class="py-6 flex flex-col items-center justify-center space-y-2 text-xs text-ribbon-300">
+            <div class="w-5 h-5 border-2 border-ribbon-400 border-t-transparent rounded-full animate-spin"></div>
+            <span class="animate-pulse font-medium">Generating clinical interpretation with Gemini 3.5 Flash Lite...</span>
           </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
-            <span class="text-slate-400">Tremor Pattern:</span>
-            <span id="scTremorType" class="font-mono font-bold text-cyan-300">--</span>
+
+          <!-- Gemini Rendered Markdown -->
+          <div id="geminiSummaryContent" class="hidden text-xs text-slate-200 leading-relaxed space-y-3 prose-ai">
+            <!-- Populated via Gemini API response -->
           </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
-            <span class="text-slate-400">Dominant Frequency Peak:</span>
-            <span id="scPeak" class="font-mono font-bold text-white">-- Hz</span>
-          </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
-            <span class="text-slate-400">4-6 Hz Band Power Concentration:</span>
-            <span id="scBand" class="font-mono font-bold text-white">-- %</span>
-          </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
-            <span class="text-slate-400">Tremor RMS Displacement:</span>
-            <span id="scRMS" class="font-mono font-bold text-white">-- RMS</span>
-          </div>
-          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
-            <span class="text-slate-400">Kinetic Excursion (Peak-to-Peak):</span>
-            <span id="scExcursion" class="font-mono font-bold text-rose-300">--</span>
+        </div>
+
+        <!-- Collapsible Sensor Telemetry Accordion -->
+        <div class="pt-2 border-t border-ocean-800/80">
+          <button type="button" onclick="toggleRawTelemetry()" class="w-full flex items-center justify-between text-slate-400 hover:text-ribbon-300 text-[11px] font-mono py-1 transition group">
+            <span class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-ocean-cyan"></span>
+              <span>Raw Kinematic Telemetry Details</span>
+            </span>
+            <span id="telemetryToggleArrow" class="text-slate-500 group-hover:text-ribbon-300">&darr; View</span>
+          </button>
+          
+          <div id="rawTelemetryPanel" class="hidden mt-2 space-y-1.5 text-xs bg-ocean-950/80 p-3.5 rounded-xl border border-ocean-800/90">
+            <div class="flex justify-between py-1 border-b border-ocean-900/80">
+              <span class="text-slate-400">MDS-UPDRS 3.15 Rating:</span>
+              <span id="scRating" class="font-mono font-bold text-white">Score --/4 (--)</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-ocean-900/80">
+              <span class="text-slate-400">Tremor Pattern:</span>
+              <span id="scTremorType" class="font-mono font-bold text-ocean-cyan">--</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-ocean-900/80">
+              <span class="text-slate-400">Dominant Frequency Peak:</span>
+              <span id="scPeak" class="font-mono font-bold text-white">-- Hz</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-ocean-900/80">
+              <span class="text-slate-400">4-6 Hz Band Power Concentration:</span>
+              <span id="scBand" class="font-mono font-bold text-white">-- %</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-ocean-900/80">
+              <span class="text-slate-400">2D RMS Displacement:</span>
+              <span id="scRMS" class="font-mono font-bold text-white">-- RMS</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-slate-400">Spatial Kinetic Excursion:</span>
+              <span id="scExcursion" class="font-mono font-bold text-ribbon-300">--</span>
+            </div>
           </div>
         </div>
 
         <!-- Retry and Return Actions -->
         <div class="pt-2 flex items-center space-x-2">
-          <button onclick="startTrial()" class="flex-1 py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs tracking-wide shadow-md transition">
+          <button onclick="startTrial()" class="flex-1 py-2.5 px-3 rounded-xl btn-dive-gradient text-white font-bold text-xs tracking-wide shadow-md transition">
             ↺ Retry Test
           </button>
-          <a href="{{ url_for('home') }}" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs text-center transition">
-            Back to Home &rarr;
+          <a href="{{ url_for('profile') }}" class="flex-1 py-2.5 px-3 rounded-xl bg-ocean-900/80 hover:bg-ocean-800 text-slate-200 border border-ocean-700/80 font-semibold text-xs text-center transition">
+            View in Profile &rarr;
           </a>
         </div>
 
@@ -235,6 +322,44 @@
   let pollInterval = null;
   let isCompletedHandled = false;
 
+  // Strict 4-Tier Clinical Color Helper (Scores 1 & 2 are Sunlit Gold & Sunset Orange, NOT Red!)
+  function getClinicalTierStyle(score) {
+    const s = Math.max(0, Math.min(4, parseInt(score) || 0));
+    if (s === 0) {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-teal-500/15 text-teal-300 border border-teal-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-teal-500/15 border border-teal-500/40 text-teal-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-teal-400 mt-1 block',
+        textClass: 'text-teal-400 font-bold',
+        borderColor: '#14b8a6'
+      };
+    } else if (s === 1) {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-amber-500/18 text-amber-300 border border-amber-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-amber-500/18 border border-amber-500/40 text-amber-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-amber-400 mt-1 block',
+        textClass: 'text-amber-400 font-bold',
+        borderColor: '#eab308'
+      };
+    } else if (s === 2) {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-orange-500/18 text-orange-300 border border-orange-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-orange-500/18 border border-orange-500/40 text-orange-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-orange-400 mt-1 block',
+        textClass: 'text-orange-400 font-bold',
+        borderColor: '#f97316'
+      };
+    } else {
+      return {
+        scoreBadgeClass: 'text-xs px-2.5 py-1 rounded-full font-bold bg-rose-500/22 text-rose-300 border border-rose-500/40 font-mono',
+        riskBannerClass: 'p-3.5 rounded-xl bg-rose-500/22 border border-rose-500/40 text-rose-200 text-center shadow-lg',
+        statusClass: 'text-xs font-bold text-rose-400 mt-1 block',
+        textClass: 'text-rose-400 font-bold',
+        borderColor: '#f43f5e'
+      };
+    }
+  }
+
   // Synced live tremor graph renderer
   const canvas = document.getElementById('liveTremorCanvas');
   const ctx = canvas.getContext('2d');
@@ -251,12 +376,12 @@
     const w = canvas.width;
     const h = canvas.height;
 
-    // Clear background
-    ctx.fillStyle = '#090d16';
+    // Ocean Abyssal Navy background
+    ctx.fillStyle = '#061326';
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    // Subtle cyan grid lines
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let y = 15; y < h; y += 25) {
@@ -265,9 +390,9 @@
     }
     ctx.stroke();
 
-    // Center Baseline (Zero mean)
+    // Center Baseline (Zero mean) with Ocean Cyan
     const midY = h / 2;
-    ctx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(0, midY);
@@ -276,8 +401,8 @@
     ctx.setLineDash([]);
 
     if (!trace || trace.length < 2) {
-      ctx.fillStyle = '#475569';
-      ctx.font = '11px Inter, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px Outfit, Inter, sans-serif';
       ctx.fillText('Awaiting hand in webcam view...', 10, h / 2 + 4);
       return;
     }
@@ -300,10 +425,10 @@
       else ctx.lineTo(px, py);
     });
 
-    // Glowing rose line
-    ctx.strokeStyle = '#f43f5e';
+    // Hot Ribbon Pink Waveform with subtle glow
+    ctx.strokeStyle = '#ec4899';
     ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#f43f5e';
+    ctx.shadowColor = '#f472b6';
     ctx.shadowBlur = 8;
     ctx.stroke();
     ctx.shadowBlur = 0;
@@ -317,14 +442,29 @@
     ctx.beginPath();
     ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#f43f5e';
+    ctx.strokeStyle = '#ec4899';
     ctx.lineWidth = 2;
     ctx.stroke();
+  }
+
+  function toggleRawTelemetry() {
+    const panel = document.getElementById('rawTelemetryPanel');
+    const arrow = document.getElementById('telemetryToggleArrow');
+    if (panel.classList.contains('hidden')) {
+      panel.classList.remove('hidden');
+      arrow.innerHTML = '&uarr; Hide';
+    } else {
+      panel.classList.add('hidden');
+      arrow.innerHTML = '&darr; View';
+    }
   }
 
   async function startTrial() {
     isCompletedHandled = false;
     document.getElementById('scorecardPanel').classList.add('hidden');
+    document.getElementById('geminiSummaryLoading').classList.remove('hidden');
+    document.getElementById('geminiSummaryContent').classList.add('hidden');
+    document.getElementById('geminiSummaryContent').innerHTML = '';
     try {
       const resp = await fetch('/api/start_test/tremor', { method: 'POST' });
       const data = await resp.json();
@@ -337,6 +477,9 @@
   async function resetTrial() {
     isCompletedHandled = false;
     document.getElementById('scorecardPanel').classList.add('hidden');
+    document.getElementById('geminiSummaryLoading').classList.remove('hidden');
+    document.getElementById('geminiSummaryContent').classList.add('hidden');
+    document.getElementById('geminiSummaryContent').innerHTML = '';
     try {
       const resp = await fetch('/api/reset_test/tremor', { method: 'POST' });
       const data = await resp.json();
@@ -455,32 +598,118 @@
     }
   }
 
-  function renderScorecard(res) {
+  async function renderScorecard(res) {
     const card = document.getElementById('scorecardPanel');
     card.classList.remove('hidden');
 
+    // Smoothly scroll to the Gemini AI Clinical Summary card on test completion
+    setTimeout(() => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+
     const badge = document.getElementById('scoreBadge');
-    badge.innerText = `Score ${res.score}/4`;
+    badge.innerText = `Evaluating...`;
+    badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-ocean-950 text-ribbon-300 border border-ribbon-400/50 animate-pulse font-mono';
 
     const riskBanner = document.getElementById('riskBanner');
     const riskLabel = document.getElementById('riskLabel');
+    riskBanner.className = 'p-3.5 rounded-xl bg-ocean-950/90 border border-ribbon-400/50 text-ribbon-200 text-center shadow-lg';
+    riskLabel.innerText = 'Gemini 3.5 Flash Lite Analyzing Sensor Kinematics...';
 
-    if (res.is_elevated_risk) {
-      riskBanner.className = 'p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/80 text-rose-200 text-center glow-rose';
-      riskLabel.innerText = res.risk_badge || 'ELEVATED RISK / ACTIVE TREMOR DETECTED';
-      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-rose-950 text-rose-300 border border-rose-500';
-    } else {
-      riskBanner.className = 'p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/80 text-emerald-200 text-center';
-      riskLabel.innerText = 'NORMAL (PHYSIOLOGICAL LIMITS)';
-      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-500';
-    }
-
-    document.getElementById('scRating').innerText = `Score ${res.score}/4 (${res.label})`;
-    document.getElementById('scTremorType').innerText = res.tremor_type || 'Physiological (Normal)';
-    document.getElementById('scPeak').innerText = `${res.peak_hz} Hz`;
-    document.getElementById('scBand').innerText = `${res.band_ratio_pct} %`;
-    document.getElementById('scRMS').innerText = `${res.rms} RMS`;
+    // Populate Raw Telemetry Collapsible Fields with sensor readings
+    document.getElementById('scRating').innerText = `Awaiting AI Analysis...`;
+    document.getElementById('scTremorType').innerText = `Analyzing movement pattern...`;
+    document.getElementById('scPeak').innerText = `${res.peak_hz || 0} Hz`;
+    document.getElementById('scBand').innerText = `${res.band_ratio_pct || 0} %`;
+    document.getElementById('scRMS').innerText = `${res.rms || 0} RMS`;
     document.getElementById('scExcursion').innerText = `${res.excursion || '--'} excursion`;
+
+    // Fetch Gemini 3.5 Flash Lite Direct AI Analysis & Results
+    const loadingElem = document.getElementById('geminiSummaryLoading');
+    const contentElem = document.getElementById('geminiSummaryContent');
+    loadingElem.classList.remove('hidden');
+    contentElem.classList.add('hidden');
+
+    try {
+      const gResp = await fetch('/api/gemini_summary/tremor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(res)
+      });
+      const gData = await gResp.json();
+      const ai = (gData && gData.summary) ? gData.summary : {};
+
+      const score = (ai.score !== undefined) ? ai.score : (res.score || 0);
+      const label = ai.label || res.label || 'Normal';
+      const isElevated = (ai.is_elevated_risk !== undefined) ? ai.is_elevated_risk : (score >= 3);
+      const riskBadge = ai.risk_badge || (score >= 3 ? 'ELEVATED RISK / ACTIVE TREMOR DETECTED' : (score > 0 ? 'MILD POSTURAL EMERGENCE' : 'NORMAL (CALM WATERS)'));
+      const tremorType = ai.tremor_type || res.tremor_type || 'Postural Tremor';
+
+      // Strict 4-Tier Clinical Color Scale (Score 1 = Gold, Score 2 = Orange, NOT Red!)
+      const tierStyle = getClinicalTierStyle(score);
+
+      badge.innerText = `Score ${score}/4`;
+      badge.classList.remove('animate-pulse');
+      badge.className = tierStyle.scoreBadgeClass;
+
+      riskBanner.className = tierStyle.riskBannerClass;
+      riskLabel.innerText = riskBadge;
+
+      document.getElementById('scRating').innerText = `Score ${score}/4 (${label}) [AI Diagnosed]`;
+      document.getElementById('scTremorType').innerText = tremorType;
+
+      // Update live indicators on the page with AI results
+      const actElem = document.getElementById('liveActive');
+      if (actElem) {
+        actElem.innerText = `${label} (Score ${score}/4)`;
+        actElem.className = tierStyle.statusClass;
+      }
+      const motionElem = document.getElementById('liveMotionType');
+      if (motionElem) {
+        motionElem.innerText = tremorType;
+        motionElem.className = tierStyle.textClass;
+      }
+
+      // Render Gemini markdown
+      let markdownText = ai.summary_markdown || '';
+      if (!markdownText) {
+        markdownText = `### Tremor Assessment Summary\n\n**Finding:** Dominant frequency detected at **${res.peak_hz} Hz** with **${res.band_ratio_pct}%** energy in 4-6 Hz band.\n\n- **Score:** MDS-UPDRS Stage 2 Score ${score}/4 (${label}).\n- **Pattern:** ${tremorType}.`;
+      }
+
+      if (window.marked && typeof window.marked.parse === 'function') {
+        contentElem.innerHTML = window.marked.parse(markdownText);
+      } else {
+        contentElem.innerHTML = `<div class="whitespace-pre-line">${markdownText}</div>`;
+      }
+
+      if (gData && gData.model_used) {
+        const chip = document.getElementById('geminiModelChip');
+        if (chip) chip.innerText = gData.model_used.includes('lite') ? 'Gemini 3.5 Flash Lite' : 'Gemini AI Clinical';
+      }
+
+      // Re-trigger scroll smoothly after rendering content
+      setTimeout(() => {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+
+    } catch (err) {
+      console.error('Failed to retrieve Gemini summary:', err);
+      const score = res.score || 0;
+      const tierStyle = getClinicalTierStyle(score);
+      badge.innerText = `Score ${score}/4`;
+      badge.className = tierStyle.scoreBadgeClass;
+      riskBanner.className = tierStyle.riskBannerClass;
+      riskLabel.innerText = res.risk_badge || 'ASSESSMENT COMPLETE';
+      contentElem.innerHTML = `
+        <div class="p-3 rounded-lg bg-ocean-950 border border-ribbon-400/30 text-slate-300">
+          <p class="font-semibold text-ribbon-300 mb-1">Clinical Evaluation Summary:</p>
+          <p>Kinematic sensor metrics recorded at <strong>${res.peak_hz} Hz</strong> (${res.band_ratio_pct}% in 4-6 Hz band). Displacement RMS is ${res.rms}.</p>
+        </div>
+      `;
+    } finally {
+      loadingElem.classList.add('hidden');
+      contentElem.classList.remove('hidden');
+    }
   }
 
   window.addEventListener('keydown', (e) => {
