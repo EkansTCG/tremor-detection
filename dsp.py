@@ -10,11 +10,11 @@ from scipy.integrate import trapezoid
 FS = 30.0  # uniform resample rate (Hz)
 
 # ---- Finger tapping thresholds (calibrate!) ----
-TAP_RATE_NORMAL = 3.5     # taps/s
-TAP_RATE_SLIGHT = 2.5
-TAP_RATE_MILD = 1.5
-DECREMENT_SLIGHT = 0.20   # fractional amplitude loss over the trial
-DECREMENT_MILD = 0.35
+TAP_RATE_NORMAL = 2.6     # taps/s
+TAP_RATE_SLIGHT = 1.8
+TAP_RATE_MILD = 1.2
+DECREMENT_SLIGHT = 0.28   # fractional amplitude loss over the trial
+DECREMENT_MILD = 0.45
 
 # ---- Tremor thresholds (calibrate!) ----
 TREMOR_BAND = (4.0, 6.0)          # parkinsonian rest/postural band
@@ -44,20 +44,57 @@ def analyze_finger_tapping(t, a_norm, fs=FS):
            "n_taps": 0, "cv": 0.0}
     if len(a) < fs * 2:
         return out
+
+    # Smooth the signal with a 3-point moving average before peak detection
+    a_smooth = np.convolve(a, np.ones(3) / 3.0, mode="same")
+    a_smooth[0] = (a[0] + a[1]) / 2.0
+    a_smooth[-1] = (a[-2] + a[-1]) / 2.0
+    a = a_smooth
+    out["a"] = a
+
     rng = np.ptp(a)
     peaks, _ = find_peaks(a, distance=max(1, int(0.12 * fs)), prominence=max(0.15 * rng, 0.05))
     out["peaks"] = peaks
     out["n_taps"] = len(peaks)
-    dur = tu[-1] - tu[0]
-    out["rate"] = len(peaks) / dur if dur > 0 else 0.0
-    if len(peaks) >= 3:
-        pt, pa = tu[peaks], a[peaks]
+
+    # Active tapping rate via (len(peaks) - 1) / (tu[peaks[-1]] - tu[peaks[0]])
+    if len(peaks) >= 2:
+        dur_active = tu[peaks[-1]] - tu[peaks[0]]
+        out["rate"] = float((len(peaks) - 1) / dur_active) if dur_active > 0 else 0.0
+    else:
+        out["rate"] = 0.0
+
+    # Subtract baseline trough levels to isolate swing amplitude
+    amps = []
+    for i, p in enumerate(peaks):
+        left = peaks[i - 1] if i > 0 else max(0, p - int(0.5 * fs))
+        right = peaks[i + 1] if i < len(peaks) - 1 else min(len(a), p + int(0.5 * fs))
+        trough = min(np.min(a[left:p]), np.min(a[p:right])) if (p > left and right > p) else np.min(a)
+        amps.append(max(0.0, a[p] - trough))
+    amps = np.array(amps)
+
+    # Linear regression on swing amplitude, dropping first and last peak outliers (peaks[1:-1])
+    if len(peaks) >= 4:
+        pt = tu[peaks[1:-1]]
+        pa = amps[1:-1]
+        dur_reg = pt[-1] - pt[0]
         reg = linregress(pt, pa)
-        out["slope"], out["intercept"] = reg.slope, reg.intercept
-        mean_amp = np.mean(pa)
-        out["decrement"] = max(0.0, -reg.slope * dur / mean_amp) if mean_amp > 0 else 0.0
-        intervals = np.diff(pt)
-        out["cv"] = float(np.std(intervals) / np.mean(intervals))
+        out["slope"], out["intercept"] = float(reg.slope), float(reg.intercept)
+        mean_amp = float(np.mean(pa))
+        out["decrement"] = max(0.0, -reg.slope * dur_reg / mean_amp) if mean_amp > 0 and dur_reg > 0 else 0.0
+    elif len(peaks) >= 3:
+        pt = tu[peaks]
+        pa = amps
+        dur_reg = pt[-1] - pt[0]
+        reg = linregress(pt, pa)
+        out["slope"], out["intercept"] = float(reg.slope), float(reg.intercept)
+        mean_amp = float(np.mean(pa))
+        out["decrement"] = max(0.0, -reg.slope * dur_reg / mean_amp) if mean_amp > 0 and dur_reg > 0 else 0.0
+
+    if len(peaks) >= 2:
+        intervals = np.diff(tu[peaks])
+        if len(intervals) > 0 and np.mean(intervals) > 0:
+            out["cv"] = float(np.std(intervals) / np.mean(intervals))
 
     r, d = out["rate"], out["decrement"]
     if out["n_taps"] < 3:

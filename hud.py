@@ -34,22 +34,22 @@ WINDOW_SIZE = 300                 # 300 samples / 30 fps = 10 s of history
 RATIO_OPEN = 1.0                  # aperture drawn as fully "open" (green) at/above this
 
 
-def dist3(a: np.ndarray, b: np.ndarray) -> float:
-    """Euclidean distance between two 3D points."""
-    return float(np.linalg.norm(a - b))
+def dist2(a: np.ndarray, b: np.ndarray) -> float:
+    """Euclidean distance between two 2D pixel points."""
+    return float(np.linalg.norm(np.asarray(a[:2], float) - np.asarray(b[:2], float)))
 
 
 def palm_ratio(hf: HandFrame) -> float:
-    """Thumb-index pinch distance / palm size, both measured in 3D world space.
+    """Thumb-index pinch distance / palm size, measured in 2D image coordinates (pixels).
 
-    Palm size averages palm length (wrist -> middle MCP) and palm width
-    (index MCP -> pinky MCP), so it stays stable when the hand rotates or tilts.
+    Normalizes 2D thumb-index distance by 2D palm size (average of wrist->middle MCP
+    and index MCP->pinky MCP in pixels), eliminating 3D depth-estimation jitter.
     """
-    w = hf.world
-    palm = 0.5 * (dist3(w[WRIST], w[MIDDLE_MCP]) + dist3(w[INDEX_MCP], w[PINKY_MCP]))
+    px = hf.pixels
+    palm = 0.5 * (dist2(px[WRIST], px[MIDDLE_MCP]) + dist2(px[INDEX_MCP], px[PINKY_MCP]))
     if palm < 1e-6:
         return float("nan")
-    return dist3(w[THUMB_TIP], w[INDEX_TIP]) / palm
+    return dist2(px[THUMB_TIP], px[INDEX_TIP]) / palm
 
 
 def index_tip_height(hf: HandFrame) -> float:
