@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Clinical Motor Assessment{% endblock %} — TremorTrack MDS-UPDRS</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+            },
+            clinical: {
+              cyan: '#00e5ff',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              dark: '#0b0f19',
+              card: '#111827',
+              border: '#1f293d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+    }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 20px -3px rgba(0, 229, 255, 0.25);
+    }
+    .glow-rose {
+      box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.25);
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 antialiased selection:bg-teal-500 selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="glass-panel sticky top-0 z-50 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Brand -->
+      <a href="{{ url_for('home') }}" class="flex items-center space-x-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-teal-400 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-lg font-bold tracking-tight text-white">TremorTrack</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-semibold uppercase">MDS-UPDRS</span>
+          </div>
+          <span class="text-xs text-slate-400 block -mt-0.5">Clinical Motor Assessment Engine</span>
+        </div>
+      </a>
+
+      <!-- Navigation Links -->
+      {% if session.get('user') %}
+      <nav class="hidden md:flex items-center space-x-1">
+        <a href="{{ url_for('home') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium {% if request.path == '/home' %}bg-slate-800 text-cyan-400 border border-slate-700/80{% else %}text-slate-300 hover:text-white hover:bg-slate-800/50{% endif %} transition">
+          Dashboard
+        </a>
+        <a href="{{ url_for('test_tapping') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium {% if request.path == '/test/tapping' %}bg-slate-800 text-cyan-400 border border-slate-700/80{% else %}text-slate-300 hover:text-white hover:bg-slate-800/50{% endif %} transition flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          <span>Stage 1: Finger Tapping</span>
+        </a>
+        <a href="{{ url_for('test_tremor') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium {% if request.path == '/test/tremor' %}bg-slate-800 text-rose-400 border border-slate-700/80{% else %}text-slate-300 hover:text-white hover:bg-slate-800/50{% endif %} transition flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+          <span>Stage 2: Postural Tremor</span>
+        </a>
+      </nav>
+      {% endif %}
+
+      <!-- User Profile / Session Actions -->
+      <div class="flex items-center space-x-3">
+        {% if session.get('user') %}
+          <div class="hidden sm:flex items-center bg-slate-900/90 border border-slate-800 rounded-full px-3 py-1.5 space-x-2.5">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xs font-semibold">
+              {{ session.get('user').get('name', 'P')[0] }}
+            </div>
+            <div class="text-left text-xs leading-tight">
+              <span class="font-medium text-slate-200 block">{{ session.get('user').get('name') }}</span>
+              <span class="text-slate-400 text-[11px] font-mono">{{ session.get('user').get('patient_id') }}</span>
+            </div>
+          </div>
+          <a href="{{ url_for('logout') }}" class="text-xs px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            Sign Out
+          </a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="text-xs px-3.5 py-1.5 rounded-lg border border-slate-700 hover:border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition">
+            Sign In
+          </a>
+          <a href="{{ url_for('demo_login') }}" class="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-bold hover:brightness-110 shadow-sm transition">
+            Demo Login
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Notification Toasts -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        {% for category, message in messages %}
+          <div class="p-3.5 rounded-xl border text-sm flex items-center justify-between {% if category == 'error' %}bg-rose-950/60 border-rose-800/80 text-rose-200{% elif category == 'success' %}bg-emerald-950/60 border-emerald-800/80 text-emerald-200{% else %}bg-slate-800/80 border-slate-700 text-slate-200{% endif %}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white">&times;</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Body Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Clinical Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950/60 py-6 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+        <span>Storage Engine: <strong>{{ db_backend or 'Local SQLite (patients.db)' }}</strong></span>
+        <span class="text-slate-600">|</span>
+        <span>MDS-UPDRS Protocol: Part III Motor Examination (3.4 & 3.15)</span>
+      </div>
+      <div>
+        <span>Research & Clinical Demonstration Tool &bull; Calibrated at 30.0 Hz</span>
+      </div>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

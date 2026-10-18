@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+
+{% block title %}Stage 2: Postural Tremor Spectral Test (MDS-UPDRS 3.15){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Breadcrumbs -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+    <div class="flex items-center space-x-3">
+      <a href="{{ url_for('home') }}" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </a>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-xl font-bold text-white tracking-tight">Stage 2: Postural Tremor Spectral Test</h1>
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-300 font-semibold font-mono">
+            MDS-UPDRS 3.15
+          </span>
+        </div>
+        <p class="text-xs text-slate-400">10-second horizontal posture trial tracking index fingertip displacement and 4–6 Hz Welch PSD.</p>
+      </div>
+    </div>
+
+    <!-- Live Status Pill -->
+    <div class="flex items-center space-x-3">
+      <div id="statusBadge" class="px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 flex items-center space-x-2">
+        <span id="statusIndicator" class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span id="statusText">AWAITING START</span>
+      </div>
+      <a href="{{ url_for('home') }}" class="text-xs px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        Back to Home
+      </a>
+    </div>
+  </div>
+
+  <!-- Dual Layout: Stream Left, Telemetry & Scorecard Right -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Left Column: Video Feed & Stream Controls (8 cols) -->
+    <div class="lg:col-span-8 space-y-4">
+      
+      <!-- Video Container -->
+      <div class="glass-panel rounded-2xl p-2 border border-slate-800 shadow-2xl relative overflow-hidden bg-slate-950 group">
+        <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
+          <img id="videoFeed" src="{{ url_for('video_feed', test_type='tremor') }}"
+               class="w-full h-full object-cover select-none"
+               alt="Stage 2 Postural Tremor MJPEG Stream">
+          
+          <!-- Live Overlay Timer (Top Right) -->
+          <div id="streamTimerOverlay" class="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-rose-500/30 text-rose-300 font-mono text-sm font-bold shadow-lg flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+            <span id="overlayTimerText">10.0s</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar Under Video -->
+        <div class="w-full bg-slate-900 h-1.5 mt-2 rounded-full overflow-hidden">
+          <div id="trialProgressBar" class="h-full bg-rose-500 w-0 transition-all duration-150"></div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="glass-panel rounded-xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center space-x-2">
+          <button id="btnStartTest" onclick="startTrial()" class="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs tracking-wide shadow-lg shadow-rose-500/20 flex items-center space-x-2 transition-all">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+            </svg>
+            <span>Start 10s Assessment</span>
+          </button>
+          <button id="btnResetTest" onclick="resetTrial()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition">
+            ↺ Reset
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2 text-xs text-slate-400">
+          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">SPACE</kbd>
+          <span>to Start</span>
+          <span class="text-slate-600">&bull;</span>
+          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">R</kbd>
+          <span>to Retry</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Protocol Instructions, Live Metrics, & Post-Trial Scorecard (4 cols) -->
+    <div class="lg:col-span-4 space-y-4">
+
+      <!-- Protocol Guide Card -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-2 flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Clinical Protocol (MDS-UPDRS 3.15)
+        </h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Extend arm and hand horizontally in front of the camera with fingers slightly separated. Once timer starts, <strong class="text-white">hold hand flat and completely still in the air</strong> for 10 seconds.
+        </p>
+      </div>
+
+      <!-- Real-Time Spectral Telemetry Card -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+            Live Spectral Telemetry
+          </h3>
+          <span id="liveTremorBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-rose-500/30 text-rose-300">
+            Height Y: <strong id="valTremorY">--</strong>
+          </span>
+        </div>
+
+        <!-- Synced Live Waveform Canvas -->
+        <div class="bg-slate-950 rounded-xl p-3 border border-slate-800/90 relative overflow-hidden">
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-1.5">
+            <span class="text-rose-400 font-semibold">GRAVITY DISPLACEMENT (SYNCED)</span>
+            <span>4–6 Hz Monitor</span>
+          </div>
+          <canvas id="liveTremorCanvas" height="90" class="w-full block"></canvas>
+          <div class="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
+            <span>-2.0s</span>
+            <span>-1.0s</span>
+            <span>NOW (Live)</span>
+          </div>
+        </div>
+        
+        <!-- Live Metric Tiles -->
+        <div class="grid grid-cols-2 gap-2 text-center">
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">Dominant Peak</span>
+            <span id="livePeak" class="text-lg font-bold text-rose-400 font-mono">-- <span class="text-xs font-normal">Hz</span></span>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">4-6 Hz Power</span>
+            <span id="liveBand" class="text-lg font-bold text-purple-400 font-mono">-- %</span>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">RMS Magnitude</span>
+            <span id="liveRMS" class="text-lg font-bold text-white font-mono">--</span>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">Tremor Status</span>
+            <span id="liveActive" class="text-xs font-bold text-slate-400 mt-1 block">--</span>
+          </div>
+        </div>
+
+        <!-- Live Kinematic Excursion & Motion Classification Strip -->
+        <div class="bg-slate-950 rounded-xl p-2.5 border border-slate-800/80 flex items-center justify-between text-xs font-mono">
+          <div class="flex items-center space-x-2 text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span>Motion Pattern:</span>
+          </div>
+          <span id="liveMotionType" class="text-cyan-300 font-bold">Awaiting hand...</span>
+        </div>
+      </div>
+
+      <!-- Stage 2 Scorecard (Dynamically populated on completion) -->
+      <div id="scorecardPanel" class="hidden glass-panel rounded-2xl p-5 border border-rose-500/40 shadow-2xl space-y-4 glow-rose transition-all duration-300">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <h3 class="text-sm font-bold text-white">Stage 2 Clinical Scorecard</h3>
+            <span class="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              Persisted to Patient Record
+            </span>
+          </div>
+          <span id="scoreBadge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-rose-950 text-rose-300 border border-rose-500">
+            Score --/4
+          </span>
+        </div>
+
+        <!-- Clinical Risk Badge -->
+        <div id="riskBanner" class="p-3.5 rounded-xl border text-center">
+          <span class="text-[10px] uppercase tracking-wider block font-medium opacity-80">Pathological Tremor Classification</span>
+          <span id="riskLabel" class="text-sm font-bold mt-0.5 block">Analyzing...</span>
+        </div>
+
+        <!-- Metrics Summary Grid -->
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">MDS-UPDRS 3.15 Rating:</span>
+            <span id="scRating" class="font-mono font-bold text-white">Score --/4 (--)</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Tremor Pattern:</span>
+            <span id="scTremorType" class="font-mono font-bold text-cyan-300">--</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Dominant Frequency Peak:</span>
+            <span id="scPeak" class="font-mono font-bold text-white">-- Hz</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">4-6 Hz Band Power Concentration:</span>
+            <span id="scBand" class="font-mono font-bold text-white">-- %</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Tremor RMS Displacement:</span>
+            <span id="scRMS" class="font-mono font-bold text-white">-- RMS</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Kinetic Excursion (Peak-to-Peak):</span>
+            <span id="scExcursion" class="font-mono font-bold text-rose-300">--</span>
+          </div>
+        </div>
+
+        <!-- Retry and Return Actions -->
+        <div class="pt-2 flex items-center space-x-2">
+          <button onclick="startTrial()" class="flex-1 py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs tracking-wide shadow-md transition">
+            ↺ Retry Test
+          </button>
+          <a href="{{ url_for('home') }}" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs text-center transition">
+            Back to Home &rarr;
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let pollInterval = null;
+  let isCompletedHandled = false;
+
+  // Synced live tremor graph renderer
+  const canvas = document.getElementById('liveTremorCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth - 24;
+    canvas.height = 90;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function drawLiveTremorWaveform(trace) {
+    if (!ctx || !canvas) return;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Clear background
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle grid lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let y = 15; y < h; y += 25) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+    }
+    ctx.stroke();
+
+    // Center Baseline (Zero mean)
+    const midY = h / 2;
+    ctx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(w, midY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (!trace || trace.length < 2) {
+      ctx.fillStyle = '#475569';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText('Awaiting hand in webcam view...', 10, h / 2 + 4);
+      return;
+    }
+
+    // Auto-scale vertical range around trace median
+    let minVal = Math.min(...trace);
+    let maxVal = Math.max(...trace);
+    let span = Math.max(maxVal - minVal, 0.08);
+    let midVal = (maxVal + minVal) / 2;
+
+    const step = w / Math.max(trace.length - 1, 1);
+    ctx.beginPath();
+    trace.forEach((val, i) => {
+      const normalized = (val - (midVal - span / 2)) / span;
+      const px = i * step;
+      const py = h - normalized * (h - 14) - 7;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+
+    // Glowing rose line
+    ctx.strokeStyle = '#f43f5e';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#f43f5e';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Active dot at newest sample
+    const lastVal = trace[trace.length - 1];
+    const lastNorm = (lastVal - (midVal - span / 2)) / span;
+    const lastX = (trace.length - 1) * step;
+    const lastY = h - lastNorm * (h - 14) - 7;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#f43f5e';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  async function startTrial() {
+    isCompletedHandled = false;
+    document.getElementById('scorecardPanel').classList.add('hidden');
+    try {
+      const resp = await fetch('/api/start_test/tremor', { method: 'POST' });
+      const data = await resp.json();
+      console.log('Started Tremor Trial:', data);
+    } catch (e) {
+      console.error('Error starting tremor test:', e);
+    }
+  }
+
+  async function resetTrial() {
+    isCompletedHandled = false;
+    document.getElementById('scorecardPanel').classList.add('hidden');
+    try {
+      const resp = await fetch('/api/reset_test/tremor', { method: 'POST' });
+      const data = await resp.json();
+      console.log('Reset Tremor Trial:', data);
+    } catch (e) {
+      console.error('Error resetting tremor test:', e);
+    }
+  }
+
+  // Fast 100ms polling loop for ultra-smooth spectral telemetry & synced graph
+  async function pollStatus() {
+    try {
+      const resp = await fetch('/api/test_status/tremor');
+      const data = await resp.json();
+
+      const statusIndicator = document.getElementById('statusIndicator');
+      const statusText = document.getElementById('statusText');
+      const overlayTimer = document.getElementById('overlayTimerText');
+      const progressBar = document.getElementById('trialProgressBar');
+
+      if (data.state === 'COUNTDOWN') {
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-rose-400 animate-ping';
+        statusText.innerText = `ACTIVE (${data.time_remaining}s)`;
+        overlayTimer.innerText = `${data.time_remaining}s`;
+        progressBar.style.width = `${data.progress * 100}%`;
+      } else if (data.state === 'COMPLETED') {
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        statusText.innerText = 'COMPLETED';
+        overlayTimer.innerText = '0.0s';
+        progressBar.style.width = '100%';
+
+        if (!isCompletedHandled && data.results) {
+          isCompletedHandled = true;
+          renderScorecard(data.results);
+        }
+      } else {
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-amber-400';
+        statusText.innerText = 'READY (IDLE)';
+        overlayTimer.innerText = '10.0s';
+        progressBar.style.width = '0%';
+      }
+
+      // Live Telemetry Sync (Runs on EVERY poll: IDLE, COUNTDOWN, COMPLETED)
+      if (data.live_metrics) {
+        const lm = data.live_metrics;
+
+        // Current vertical position readout
+        document.getElementById('valTremorY').innerText = `${lm.current_y > 0 ? '+' : ''}${lm.current_y.toFixed(3)}`;
+
+        // Dominant peak frequency
+        if (lm.peak_hz > 0) {
+          document.getElementById('livePeak').innerHTML = `${lm.peak_hz} <span class="text-xs font-normal">Hz</span>`;
+        } else if (data.state === 'COUNTDOWN') {
+          document.getElementById('livePeak').innerHTML = `<span class="text-xs text-rose-300">Tracking...</span>`;
+        } else {
+          document.getElementById('livePeak').innerHTML = `0.0 <span class="text-xs font-normal">Hz</span>`;
+        }
+
+        // 4-6 Hz band power %
+        document.getElementById('liveBand').innerText = `${lm.band_ratio_pct}%`;
+
+        // RMS magnitude
+        document.getElementById('liveRMS').innerText = lm.rms > 0 ? lm.rms : '0.0000';
+
+        // Tremor Movement & Shaking Status indicator
+        const actElem = document.getElementById('liveActive');
+        if (lm.is_elevated) {
+          actElem.innerText = lm.status_badge || 'ACTIVE (Elevated)';
+          actElem.className = 'text-xs font-bold text-rose-400 mt-1 block';
+        } else {
+          actElem.innerText = 'STABLE (Normal)';
+          actElem.className = 'text-xs font-bold text-emerald-400 mt-1 block';
+        }
+
+        // Live Clinical Motion Classification readout
+        const motionElem = document.getElementById('liveMotionType');
+        if (lm.tremor_type) {
+          motionElem.innerText = lm.tremor_type;
+          motionElem.className = lm.is_elevated ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold';
+        } else if (data.state === 'COUNTDOWN') {
+          motionElem.innerText = 'Analyzing tremor kinematics...';
+          motionElem.className = 'text-cyan-300 font-bold';
+        } else {
+          motionElem.innerText = 'Ready (Awaiting Start)';
+          motionElem.className = 'text-slate-400 font-bold';
+        }
+
+        // Render synced scrolling tremor waveform graph
+        if (lm.recent_trace && lm.recent_trace.length > 0) {
+          drawLiveTremorWaveform(lm.recent_trace);
+        }
+      }
+
+      // If finished, override with final locked scorecard metrics
+      if (data.results && data.state === 'COMPLETED') {
+        document.getElementById('livePeak').innerHTML = `${data.results.peak_hz} <span class="text-xs font-normal">Hz</span>`;
+        document.getElementById('liveBand').innerText = `${data.results.band_ratio_pct}%`;
+        document.getElementById('liveRMS').innerText = data.results.rms;
+        const actElem = document.getElementById('liveActive');
+        if (data.results.is_elevated_risk) {
+          actElem.innerText = 'ACTIVE (Elevated)';
+          actElem.className = 'text-xs font-bold text-rose-400 mt-1 block';
+        } else {
+          actElem.innerText = 'STABLE (Normal)';
+          actElem.className = 'text-xs font-bold text-emerald-400 mt-1 block';
+        }
+        const motionElem = document.getElementById('liveMotionType');
+        if (motionElem && data.results.tremor_type) {
+          motionElem.innerText = data.results.tremor_type;
+          motionElem.className = data.results.is_elevated_risk ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold';
+        }
+      }
+
+    } catch (err) {
+      console.error('Poll error:', err);
+    }
+  }
+
+  function renderScorecard(res) {
+    const card = document.getElementById('scorecardPanel');
+    card.classList.remove('hidden');
+
+    const badge = document.getElementById('scoreBadge');
+    badge.innerText = `Score ${res.score}/4`;
+
+    const riskBanner = document.getElementById('riskBanner');
+    const riskLabel = document.getElementById('riskLabel');
+
+    if (res.is_elevated_risk) {
+      riskBanner.className = 'p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/80 text-rose-200 text-center glow-rose';
+      riskLabel.innerText = res.risk_badge || 'ELEVATED RISK / ACTIVE TREMOR DETECTED';
+      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-rose-950 text-rose-300 border border-rose-500';
+    } else {
+      riskBanner.className = 'p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/80 text-emerald-200 text-center';
+      riskLabel.innerText = 'NORMAL (PHYSIOLOGICAL LIMITS)';
+      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-500';
+    }
+
+    document.getElementById('scRating').innerText = `Score ${res.score}/4 (${res.label})`;
+    document.getElementById('scTremorType').innerText = res.tremor_type || 'Physiological (Normal)';
+    document.getElementById('scPeak').innerText = `${res.peak_hz} Hz`;
+    document.getElementById('scBand').innerText = `${res.band_ratio_pct} %`;
+    document.getElementById('scRMS').innerText = `${res.rms} RMS`;
+    document.getElementById('scExcursion').innerText = `${res.excursion || '--'} excursion`;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      startTrial();
+    } else if (e.code === 'KeyR') {
+      e.preventDefault();
+      startTrial();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    resizeCanvas();
+    pollInterval = setInterval(pollStatus, 100);
+  });
+</script>
+{% endblock %}

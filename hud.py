@@ -1,31 +1,23 @@
 # pyrefly: ignore[missing-import]
-"""HUD: Three-Stage Clinical Motor Assessment + 300-Sample Sliding Windows.
+"""HUD: Clinical Motor Assessment Overlays, Graphs, and Decoupled Test Views.
 
-Assessment Flow:
-  1. Stage 1 — Finger Tapping (10s countdown):
-     Prompts: "Tap thumb and index finger as WIDE and FAST as possible."
-     Locks in: final tap speed, fatigue slope, and hesitation count.
-  2. Stage 2 — Postural Tremor (10s countdown):
-     Prompts: "Hold hand flat and completely still in the air."
-     Watches bottom graph for 4–6 Hz red zone spike & locks in dominant frequency.
-  3. Stage 3 — Final Clinical Scorecard:
-     Displays locked-in metrics with a Green Normal or Red Elevated Risk badge.
-
-Controls:
-  * [SPACE] : Start assessment / Retest from Scorecard
-  * [R]     : Reset / restart assessment
-  * [C]     : Clear rolling window queues
-  * [Q]/ESC : Quit
+Supports:
+- Stage 1 — Finger Tapping Test (Aperture tracking, scrolling waveform, 10s countdown, Stage 1 Scorecard)
+- Stage 2 — Postural Tremor Spectral Test (Index tip height, live spectrum, 10s countdown, Stage 2 Scorecard)
+- Unified Assessment HUD for backward compatibility
 """
 from __future__ import annotations
 
+import os
+import time
 from collections import deque
+from typing import Optional, Union
 
 # pyrefly: ignore[missing-import]
 import cv2
 import numpy as np
 
-from session import AssessmentSession, SessionState
+from session import AssessmentSession, SessionState, TappingSession, TremorSession, Stage1Results, Stage2Results
 from vision import (HandFrame, HandTracker, INDEX_MCP, INDEX_TIP, MIDDLE_MCP, PINKY_MCP,
                     THUMB_TIP, WRIST)
 
@@ -63,6 +55,14 @@ def index_tip_height(hf: HandFrame) -> float:
     if size_px < 1e-6:
         return float("nan")
     return float(-hf.pixels[INDEX_TIP, 1] / size_px)   # image y grows downward -> negate
+
+
+def index_tip_coords(hf: HandFrame) -> tuple[float, float]:
+    """Index fingertip (x, y) coordinates normalized by hand size in pixels for omnidirectional tremor tracking."""
+    size_px = hf.extras.get("hand_size_px", 0.0)
+    if size_px < 1e-6:
+        return float("nan"), float("nan")
+    return float(hf.pixels[INDEX_TIP, 0] / size_px), float(-hf.pixels[INDEX_TIP, 1] / size_px)
 
 
 class RollingWindow:
@@ -106,10 +106,7 @@ class RollingWindow:
         return self.timestamps[-1] - self.timestamps[0] if len(self) > 1 else 0.0
 
     def arrays(self):
-        """Snapshot as numpy arrays (timestamps, aperture, index_y).
-
-        dsp.analyze_finger_tapping(t, aperture) / dsp.analyze_tremor_spectrum(t, index_y)
-        """
+        """Snapshot as numpy arrays (timestamps, aperture, index_y)."""
         return (np.fromiter(self.timestamps, float), np.fromiter(self.aperture, float),
                 np.fromiter(self.index_y, float))
 
@@ -132,14 +129,29 @@ def draw_pinch_cue(frame, hf: HandFrame, ratio: float):
     radius = int(8 + 30 * np.clip(ratio / RATIO_OPEN, 0, 1.5)) if np.isfinite(ratio) else 8
     cv2.circle(frame, mid, radius, color, 2, cv2.LINE_AA)
     cv2.circle(frame, mid, 4, color, -1, cv2.LINE_AA)
-    cv2.putText(frame, f"{ratio:.2f}", (mid[0] + radius + 6, mid[1] + 6),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+    cv2.putText(frame, f"Aperture: {ratio:.2f}", (mid[0] + radius + 8, mid[1] + 6),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2, cv2.LINE_AA)
+
+
+def draw_tremor_cue(frame, hf: HandFrame, iy: float):
+    """Visual crosshairs and stability beacon at the index tip during tremor test."""
+    p = tuple(hf.pixels[INDEX_TIP])
+    cv2.circle(frame, p, 12, (0, 220, 255), 2, cv2.LINE_AA)
+    cv2.circle(frame, p, 4, (0, 255, 200), -1, cv2.LINE_AA)
+    cv2.line(frame, (p[0] - 20, p[1]), (p[0] + 20, p[1]), (0, 220, 255), 1, cv2.LINE_AA)
+    cv2.line(frame, (p[0], p[1] - 20), (p[0], p[1] + 20), (0, 220, 255), 1, cv2.LINE_AA)
+    cv2.putText(frame, f"Y: {iy:+.3f}", (p[0] + 16, p[1] - 12),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.60, (0, 255, 200), 2, cv2.LINE_AA)
 
 
 def _draw_series_panel(frame, win: RollingWindow, values: np.ndarray, x0: int, y0: int,
                        w: int, h: int, label: str, color, lo: float, hi: float,
                        ref: float | None = None):
     """One translucent scrolling plot of a queue, scaled to [lo, hi]."""
+    H, W = frame.shape[:2]
+    if y0 + h > H or x0 + w > W or y0 < 0 or x0 < 0:
+        return
+
     roi = frame[y0:y0 + h, x0:x0 + w]
     cv2.addWeighted(roi, 0.35, np.full_like(roi, 20), 0.65, 0, roi)
     cv2.rectangle(frame, (x0, y0), (x0 + w, y0 + h), (90, 90, 90), 1, cv2.LINE_AA)
@@ -150,15 +162,14 @@ def _draw_series_panel(frame, win: RollingWindow, values: np.ndarray, x0: int, y
 
     if ref is not None:
         ry = int(to_y(ref))
-        cv2.line(frame, (x0 + 4, ry), (x0 + w - 4, ry), (70, 70, 70), 1, cv2.LINE_AA)
+        if gy0 <= ry <= gy1:
+            cv2.line(frame, (x0 + 4, ry), (x0 + w - 4, ry), (70, 70, 70), 1, cv2.LINE_AA)
 
     if len(values) > 1:
-        # x is slot index across the full window, so the trace fills left -> right
         xs = x0 + 4 + (np.arange(len(values)) + (win.maxlen - len(values))) * (w - 8) / (win.maxlen - 1)
         ok = np.isfinite(values)
         ys = to_y(np.where(ok, values, lo))
         pts = np.column_stack([xs, np.clip(ys, gy0, gy1)]).astype(np.int32)
-        # break the line at gaps (no hand) instead of diving to zero
         start = None
         for i in range(len(pts) + 1):
             if i < len(pts) and ok[i]:
@@ -175,8 +186,52 @@ def _draw_series_panel(frame, win: RollingWindow, values: np.ndarray, x0: int, y
                 (230, 230, 230), 1, cv2.LINE_AA)
 
 
+# ------------------------------------------------------------------ Decoupled Test Graphs
+def draw_tapping_graph(frame, win: RollingWindow, w: int = 460, h: int = 130, margin: int = 20):
+    """Single clean scrolling aperture plot for Page 1 (/test/tapping)."""
+    H = frame.shape[0]
+    x0 = margin
+    y0 = H - margin - h
+    _, ap, _ = win.arrays()
+
+    fa = ap[np.isfinite(ap)]
+    ap_hi = max(1.5, float(fa.max()) * 1.1) if fa.size else 1.5
+    _draw_series_panel(frame, win, ap, x0, y0, w, h, "MDS-UPDRS 3.4  Thumb-Index Aperture", (255, 210, 80),
+                       0.0, ap_hi, ref=RATIO_OPEN)
+
+    cv2.putText(frame, f"{len(win)}/{win.maxlen} samples ({win.span:4.1f}s)", (x0 + w - 170, y0 + 18),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
+    fill = int((w - 8) * len(win) / win.maxlen)
+    bar_color = (80, 220, 120) if win.full else (80, 180, 255)
+    cv2.rectangle(frame, (x0 + 4, y0 + h - 6), (x0 + 4 + fill, y0 + h - 2), bar_color, -1)
+
+
+def draw_tremor_graph(frame, win: RollingWindow, w: int = 460, h: int = 130, margin: int = 20):
+    """Single clean scrolling index height plot with auto-zoom for Page 2 (/test/tremor)."""
+    H = frame.shape[0]
+    x0 = margin
+    y0 = H - margin - h
+    _, _, iy = win.arrays()
+
+    fi = iy[np.isfinite(iy)]
+    if fi.size:
+        mid, half = float(np.median(fi)), max(float(np.ptp(fi)) * 0.6, 0.05)
+        lo, hi = mid - half, mid + half
+    else:
+        lo, hi = -1.0, 1.0
+
+    _draw_series_panel(frame, win, iy, x0, y0, w, h, "MDS-UPDRS 3.15  Index Height (Gravity Axis)",
+                       (120, 160, 255), lo, hi)
+
+    cv2.putText(frame, f"{len(win)}/{win.maxlen} samples ({win.span:4.1f}s)", (x0 + w - 170, y0 + 18),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
+    fill = int((w - 8) * len(win) / win.maxlen)
+    bar_color = (80, 220, 120) if win.full else (80, 180, 255)
+    cv2.rectangle(frame, (x0 + 4, y0 + h - 6), (x0 + 4 + fill, y0 + h - 2), bar_color, -1)
+
+
 def draw_window_graph(frame, win: RollingWindow, w: int = 440, h: int = 110, margin: int = 16):
-    """Stacked plots (bottom-left): Stage 1 aperture over Stage 2 index height, plus fill bar."""
+    """Stacked plots (bottom-left) for legacy combined mode."""
     H = frame.shape[0]
     x0 = margin
     y_ap = H - margin - 2 * h - 8
@@ -188,7 +243,6 @@ def draw_window_graph(frame, win: RollingWindow, w: int = 440, h: int = 110, mar
     _draw_series_panel(frame, win, ap, x0, y_ap, w, h, "Stage 1  aperture", (255, 210, 80),
                        0.0, ap_hi, ref=RATIO_OPEN)
 
-    # tremor is a small wiggle on a large offset: auto-zoom around the window's own range
     fi = iy[np.isfinite(iy)]
     if fi.size:
         mid, half = float(np.median(fi)), max(float(np.ptp(fi)) * 0.6, 0.05)
@@ -198,7 +252,6 @@ def draw_window_graph(frame, win: RollingWindow, w: int = 440, h: int = 110, mar
     _draw_series_panel(frame, win, iy, x0, y_iy, w, h, "Stage 2  index tip height",
                        (120, 160, 255), lo, hi)
 
-    # shared buffer status for all three queues
     cv2.putText(frame, f"{len(win)}/{win.maxlen}  ({win.span:4.1f}s)", (x0 + w - 140, y_ap + 18),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
     fill = int((w - 8) * len(win) / win.maxlen)
@@ -206,12 +259,172 @@ def draw_window_graph(frame, win: RollingWindow, w: int = 440, h: int = 110, mar
     cv2.rectangle(frame, (x0 + 4, y_iy + h - 8), (x0 + 4 + fill, y_iy + h - 4), bar_color, -1)
 
 
-# ------------------------------------------------------------------ Assessment Prompts & Scorecard
+# ------------------------------------------------------------------ Decoupled HUD Banners & Scorecards
+def draw_tapping_hud(frame: np.ndarray, session: TappingSession, t: float):
+    """Dedicated HUD prompt banner, 10s countdown, and Stage 1 scorecard for /test/tapping."""
+    H, W = frame.shape[:2]
+    bx, by, bw, bh = 30, 14, W - 60, 96
+    roi = frame[by:by + bh, bx:bx + bw]
+    cv2.addWeighted(roi, 0.25, np.full_like(roi, 20), 0.75, 0, roi)
+    cv2.rectangle(frame, (bx, by), (bx + bw, by + bh), (60, 60, 60), 1, cv2.LINE_AA)
+
+    rem = session.time_remaining(t)
+    frac = session.progress_fraction(t)
+
+    if session.state == SessionState.IDLE:
+        cv2.putText(frame, "STAGE 1: BRADYKINESIA FINGER TAPPING (MDS-UPDRS 3.4)", (bx + 20, by + 34),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.80, (0, 229, 255), 2, cv2.LINE_AA)
+        cv2.putText(frame, "Click [Start Test] or press [SPACE] to begin 10-second trial",
+                    (bx + 20, by + 70), cv2.FONT_HERSHEY_SIMPLEX, 0.70, (240, 240, 240), 2, cv2.LINE_AA)
+
+    elif session.state == SessionState.COUNTDOWN:
+        cv2.putText(frame, "STAGE 1 — FINGER TAPPING ACTIVE", (bx + 20, by + 32),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 229, 255), 2, cv2.LINE_AA)
+        cv2.putText(frame, f"TIME: {rem:4.1f}s", (bx + bw - 180, by + 32),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 255, 200), 2, cv2.LINE_AA)
+        cv2.putText(frame, '"Tap thumb and index finger as WIDE and FAST as possible."',
+                    (bx + 20, by + 68), cv2.FONT_HERSHEY_SIMPLEX, 0.78, (255, 255, 255), 2, cv2.LINE_AA)
+        bar_w = int((bw - 40) * (1.0 - frac))
+        cv2.rectangle(frame, (bx + 20, by + 82), (bx + 20 + bar_w, by + 88), (0, 229, 255), -1)
+
+    elif session.state == SessionState.COMPLETED:
+        cv2.putText(frame, "STAGE 1 ASSESSMENT COMPLETE  [SAVED TO PATIENT RECORD]", (bx + 20, by + 34),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (80, 220, 120), 2, cv2.LINE_AA)
+        cv2.putText(frame, "Review clinical scorecard below. Click [Retry Test] or [Back to Home].",
+                    (bx + 20, by + 70), cv2.FONT_HERSHEY_SIMPLEX, 0.68, (230, 230, 230), 2, cv2.LINE_AA)
+        draw_tapping_scorecard(frame, session)
+
+
+def draw_tapping_scorecard(frame: np.ndarray, session: TappingSession):
+    """Draw Stage 1 Scorecard modal onto video stream when tapping completes."""
+    if not session.results:
+        return
+    s1 = session.results
+    H, W = frame.shape[:2]
+    cw, ch = 680, 360
+    cx0, cy0 = (W - cw) // 2, (H - ch) // 2 + 30
+
+    card_roi = frame[cy0:cy0 + ch, cx0:cx0 + cw]
+    cv2.addWeighted(card_roi, 0.12, np.full_like(card_roi, 16), 0.88, 0, card_roi)
+    cv2.rectangle(frame, (cx0, cy0), (cx0 + cw, cy0 + ch), (70, 70, 70), 2, cv2.LINE_AA)
+
+    # Title
+    cv2.putText(frame, "MDS-UPDRS 3.4 FINGER TAPPING SCORECARD", (cx0 + 28, cy0 + 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.line(frame, (cx0 + 28, cy0 + 54), (cx0 + cw - 28, cy0 + 54), (90, 90, 90), 1, cv2.LINE_AA)
+
+    # Clinical Risk Badge (Red Elevated Risk vs Green Normal)
+    if s1.is_elevated_risk:
+        badge_text = " ELEVATED RISK / ASYMMETRY DETECTED "
+        badge_bg = (30, 30, 220)       # Solid Red
+        badge_border = (60, 60, 255)
+    else:
+        badge_text = " NORMAL (PHYSIOLOGICAL) "
+        badge_bg = (40, 160, 40)       # Solid Green
+        badge_border = (80, 240, 80)
+
+    cv2.rectangle(frame, (cx0 + 28, cy0 + 68), (cx0 + cw - 28, cy0 + 110), badge_bg, -1)
+    cv2.rectangle(frame, (cx0 + 28, cy0 + 68), (cx0 + cw - 28, cy0 + 110), badge_border, 2, cv2.LINE_AA)
+    cv2.putText(frame, f"STATUS: {badge_text}", (cx0 + 40, cy0 + 98),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.70, (255, 255, 255), 2, cv2.LINE_AA)
+
+    # Metrics Grid
+    my0 = cy0 + 144
+    cv2.putText(frame, f"Final Tap Speed:       {s1.rate:5.1f} taps/sec", (cx0 + 36, my0),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.65, (240, 240, 240), 2, cv2.LINE_AA)
+    cv2.putText(frame, f"Fatigue Decrement:     {s1.decrement * 100:5.1f} %", (cx0 + 36, my0 + 36),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.65, (240, 240, 240), 2, cv2.LINE_AA)
+    cv2.putText(frame, f"Amplitude Decay Slope: {s1.slope:+.4f} /sec", (cx0 + 36, my0 + 72),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.62, (200, 200, 200), 1, cv2.LINE_AA)
+    cv2.putText(frame, f"MDS-UPDRS Rating:      Score {s1.score}/4 ({s1.label})", (cx0 + 36, my0 + 108),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.62, (0, 229, 255), 2, cv2.LINE_AA)
+
+    # Footer note
+    cv2.putText(frame, "Result persisted to database. Use web buttons to Retry or Return.",
+                (cx0 + 36, cy0 + ch - 22), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (180, 180, 180), 1, cv2.LINE_AA)
+
+
+def draw_tremor_hud(frame: np.ndarray, session: TremorSession, t: float):
+    """Dedicated HUD prompt banner, 10s countdown, and Stage 2 scorecard for /test/tremor."""
+    H, W = frame.shape[:2]
+    bx, by, bw, bh = 30, 14, W - 60, 96
+    roi = frame[by:by + bh, bx:bx + bw]
+    cv2.addWeighted(roi, 0.25, np.full_like(roi, 20), 0.75, 0, roi)
+    cv2.rectangle(frame, (bx, by), (bx + bw, by + bh), (60, 60, 60), 1, cv2.LINE_AA)
+
+    rem = session.time_remaining(t)
+    frac = session.progress_fraction(t)
+
+    if session.state == SessionState.IDLE:
+        cv2.putText(frame, "STAGE 2: POSTURAL TREMOR SPECTRAL TEST (MDS-UPDRS 3.15)", (bx + 20, by + 34),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.78, (255, 120, 120), 2, cv2.LINE_AA)
+        cv2.putText(frame, "Click [Start Test] or press [SPACE] to begin 10-second trial",
+                    (bx + 20, by + 70), cv2.FONT_HERSHEY_SIMPLEX, 0.70, (240, 240, 240), 2, cv2.LINE_AA)
+
+    elif session.state == SessionState.COUNTDOWN:
+        cv2.putText(frame, "STAGE 2 — POSTURAL TREMOR ACTIVE", (bx + 20, by + 32),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 100, 100), 2, cv2.LINE_AA)
+        cv2.putText(frame, f"TIME: {rem:4.1f}s", (bx + bw - 180, by + 32),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 255, 200), 2, cv2.LINE_AA)
+        cv2.putText(frame, '"Hold hand flat and completely still in the air."',
+                    (bx + 20, by + 68), cv2.FONT_HERSHEY_SIMPLEX, 0.82, (255, 255, 255), 2, cv2.LINE_AA)
+        bar_w = int((bw - 40) * (1.0 - frac))
+        cv2.rectangle(frame, (bx + 20, by + 82), (bx + 20 + bar_w, by + 88), (255, 100, 100), -1)
+
+    elif session.state == SessionState.COMPLETED:
+        cv2.putText(frame, "STAGE 2 ASSESSMENT COMPLETE  [SAVED TO PATIENT RECORD]", (bx + 20, by + 34),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (80, 220, 120), 2, cv2.LINE_AA)
+        cv2.putText(frame, "Review clinical scorecard below. Click [Retry Test] or [Back to Home].",
+                    (bx + 20, by + 70), cv2.FONT_HERSHEY_SIMPLEX, 0.68, (230, 230, 230), 2, cv2.LINE_AA)
+        draw_tremor_scorecard(frame, session)
+
+
+def draw_tremor_scorecard(frame: np.ndarray, session: TremorSession):
+    """Draw Stage 2 Scorecard modal onto video stream when tremor completes."""
+    if not session.results:
+        return
+    s2 = session.results
+    H, W = frame.shape[:2]
+    cw, ch = 680, 360
+    cx0, cy0 = (W - cw) // 2, (H - ch) // 2 + 30
+
+    card_roi = frame[cy0:cy0 + ch, cx0:cx0 + cw]
+    cv2.addWeighted(card_roi, 0.12, np.full_like(card_roi, 16), 0.88, 0, card_roi)
+    cv2.rectangle(frame, (cx0, cy0), (cx0 + cw, cy0 + ch), (70, 70, 70), 2, cv2.LINE_AA)
+
+    # Title
+    cv2.putText(frame, "MDS-UPDRS 3.15 POSTURAL TREMOR SCORECARD", (cx0 + 28, cy0 + 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.line(frame, (cx0 + 28, cy0 + 54), (cx0 + cw - 28, cy0 + 54), (90, 90, 90), 1, cv2.LINE_AA)
+
+    # Score Badge
+    badge_color = (40, 160, 40) if not s2.is_elevated_risk else (30, 30, 220)
+    risk_label = "NORMAL (PHYSIOLOGICAL)" if not s2.is_elevated_risk else "ELEVATED RISK / PARKINSONIAN BAND"
+    cv2.rectangle(frame, (cx0 + 28, cy0 + 70), (cx0 + cw - 28, cy0 + 112), badge_color, -1)
+    cv2.putText(frame, f" STATUS: {risk_label} ", (cx0 + 40, cy0 + 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.68, (255, 255, 255), 2, cv2.LINE_AA)
+
+    # Metrics Grid
+    my0 = cy0 + 144
+    cv2.putText(frame, f"Dominant Peak:         {s2.peak_hz:5.1f} Hz", (cx0 + 36, my0),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.65, (240, 240, 240), 2, cv2.LINE_AA)
+    cv2.putText(frame, f"4-6 Hz Band Power:     {s2.band_ratio * 100:5.1f} %", (cx0 + 36, my0 + 38),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.65, (240, 240, 240), 2, cv2.LINE_AA)
+    cv2.putText(frame, f"Tremor Magnitude:      {s2.rms:5.4f} RMS", (cx0 + 36, my0 + 76),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.62, (200, 200, 200), 1, cv2.LINE_AA)
+    cv2.putText(frame, f"MDS-UPDRS Rating:      Score {s2.score}/3 ({s2.label})", (cx0 + 36, my0 + 114),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.62, (200, 200, 200), 1, cv2.LINE_AA)
+
+    # Footer note
+    cv2.putText(frame, "Result persisted to database. Use web buttons to Retry or Return.",
+                (cx0 + 36, cy0 + ch - 22), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (180, 180, 180), 1, cv2.LINE_AA)
+
+
+# ------------------------------------------------------------------ Legacy Assessment Prompts & Scorecard
 def draw_assessment_hud(frame: np.ndarray, session: AssessmentSession, t: float):
     """Render top instruction banner, 10s countdown bar, and the Stage 3 clinical scorecard."""
     H, W = frame.shape[:2]
 
-    # --- TOP PROMPT BANNER ---
     bx, by, bw, bh = 40, 14, W - 80, 96
     roi = frame[by:by + bh, bx:bx + bw]
     cv2.addWeighted(roi, 0.25, np.full_like(roi, 20), 0.75, 0, roi)
@@ -227,15 +440,12 @@ def draw_assessment_hud(frame: np.ndarray, session: AssessmentSession, t: float)
                     (bx + 20, by + 72), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (240, 240, 240), 2, cv2.LINE_AA)
 
     elif session.state == SessionState.STAGE1_COUNTDOWN:
-        # Title + countdown
         cv2.putText(frame, "STAGE 1 — FINGER TAPPING", (bx + 20, by + 32),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 229, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, f"TIME: {rem:4.1f}s", (bx + bw - 180, by + 32),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 255, 200), 2, cv2.LINE_AA)
-        # Prompts the user: "Tap thumb and index finger as WIDE and FAST as possible."
         cv2.putText(frame, '"Tap thumb and index finger as WIDE and FAST as possible."',
                     (bx + 20, by + 68), cv2.FONT_HERSHEY_SIMPLEX, 0.78, (255, 255, 255), 2, cv2.LINE_AA)
-        # Progress countdown bar
         bar_w = int((bw - 40) * (1.0 - frac))
         cv2.rectangle(frame, (bx + 20, by + 82), (bx + 20 + bar_w, by + 88), (0, 229, 255), -1)
 
@@ -250,15 +460,12 @@ def draw_assessment_hud(frame: np.ndarray, session: AssessmentSession, t: float)
                     cv2.FONT_HERSHEY_SIMPLEX, 0.60, (0, 255, 200), 1, cv2.LINE_AA)
 
     elif session.state == SessionState.STAGE2_COUNTDOWN:
-        # Title + countdown
         cv2.putText(frame, "STAGE 2 — POSTURAL TREMOR", (bx + 20, by + 32),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 80, 80), 2, cv2.LINE_AA)
         cv2.putText(frame, f"TIME: {rem:4.1f}s", (bx + bw - 180, by + 32),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 255, 200), 2, cv2.LINE_AA)
-        # Prompts the user: "Hold hand flat and completely still in the air."
         cv2.putText(frame, '"Hold hand flat and completely still in the air."',
                     (bx + 20, by + 68), cv2.FONT_HERSHEY_SIMPLEX, 0.82, (255, 255, 255), 2, cv2.LINE_AA)
-        # Progress countdown bar
         bar_w = int((bw - 40) * (1.0 - frac))
         cv2.rectangle(frame, (bx + 20, by + 82), (bx + 20 + bar_w, by + 88), (255, 80, 80), -1)
 
@@ -267,7 +474,6 @@ def draw_assessment_hud(frame: np.ndarray, session: AssessmentSession, t: float)
                     cv2.FONT_HERSHEY_SIMPLEX, 0.80, (0, 255, 200), 2, cv2.LINE_AA)
         cv2.putText(frame, "Press [SPACE] or [R] to Retest   |   [Q] to Quit", (bx + 20, by + 72),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (220, 220, 220), 2, cv2.LINE_AA)
-        # Draw full scorecard modal
         draw_clinical_scorecard(frame, session)
 
 
@@ -277,17 +483,14 @@ def draw_clinical_scorecard(frame: np.ndarray, session: AssessmentSession):
     cw, ch = 860, 480
     cx0, cy0 = (W - cw) // 2, (H - ch) // 2 + 30
 
-    # Modal backdrop
     card_roi = frame[cy0:cy0 + ch, cx0:cx0 + cw]
     cv2.addWeighted(card_roi, 0.12, np.full_like(card_roi, 16), 0.88, 0, card_roi)
     cv2.rectangle(frame, (cx0, cy0), (cx0 + cw, cy0 + ch), (70, 70, 70), 2, cv2.LINE_AA)
 
-    # Header
     cv2.putText(frame, "MDS-UPDRS MOTOR ASSESSMENT SCORECARD", (cx0 + 36, cy0 + 44),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.85, (255, 255, 255), 2, cv2.LINE_AA)
     cv2.line(frame, (cx0 + 36, cy0 + 60), (cx0 + cw - 36, cy0 + 60), (90, 90, 90), 1, cv2.LINE_AA)
 
-    # Clinical Badge: Green [NORMAL] or Red [ELEVATED RISK / ASYMMETRY DETECTED]
     badge_y0 = cy0 + 78
     badge_h = 44
     if session.is_elevated_risk:
@@ -307,7 +510,6 @@ def draw_clinical_scorecard(frame: np.ndarray, session: AssessmentSession):
     cv2.putText(frame, badge_text, (badge_x0 + 20, badge_y0 + 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2, cv2.LINE_AA)
 
-    # Two side-by-side metric columns
     col_w = (cw - 100) // 2
     c1_x0 = cx0 + 36
     c2_x0 = cx0 + 36 + col_w + 28
@@ -356,22 +558,23 @@ def draw_clinical_scorecard(frame: np.ndarray, session: AssessmentSession):
         cv2.putText(frame, f"UPDRS Rating:  Score {s2.score}/3 ({s2.label})", (c2_x0 + 16, box_y0 + 214),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.60, s2_color, 2, cv2.LINE_AA)
 
-    # Footer
     cv2.putText(frame, "Press [SPACE] or [R] to Retest Assessment  |  [Q] to Exit",
                 (cx0 + 180, cy0 + ch - 22), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (180, 180, 180), 1, cv2.LINE_AA)
 
 
-# ------------------------------------------------------------------ Main Loop
-def main():
+# ------------------------------------------------------------------ Desktop OpenCV Window Mode
+def run_desktop_hud():
+    cv2.namedWindow("Tremor HUD", cv2.WINDOW_AUTOSIZE)
     win = RollingWindow()
     session = AssessmentSession()
 
+    print("\n[hud] Starting Desktop OpenCV HUD preview (Press [SPACE] to start trial, [Q] to quit)...")
     with HandTracker(num_hands=1) as tracker:
         while True:
             frame, hands, t = tracker.read()
             if frame is None:
-                print("[hud] camera frame grab failed")
-                break
+                time.sleep(0.03)
+                continue
 
             ratio = float("nan")
             iy = float("nan")
@@ -384,39 +587,88 @@ def main():
                 tracker.draw(frame, hands, show_pinch=False)
                 draw_pinch_cue(frame, hf, ratio)
             else:
-                win.push(t, float("nan"), float("nan"))   # preserve time progression
+                win.push(t, float("nan"), float("nan"))
 
-            # Update Clinical Assessment Session State
             session.update(t, ratio, iy)
 
-            # Draw bottom-left live sliding window graphs (aperture + tremor height)
             if session.state != SessionState.STAGE3_SCORECARD:
                 draw_window_graph(frame, win)
 
-            # Draw top prompts, countdown bar, and clinical scorecard
             draw_assessment_hud(frame, session, t)
 
-            # FPS banner
             cv2.putText(frame, f"FPS {tracker.fps:5.1f}", (16, 28),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 200), 2, cv2.LINE_AA)
 
             cv2.imshow("Tremor HUD", frame)
-            key = cv2.waitKey(1) & 0xFF
+            key = cv2.waitKey(20) & 0xFF
 
             if key in (ord("q"), 27):
                 break
             elif key == ord(" "):
-                # Start / restart trial
                 session.start(t)
             elif key == ord("r"):
-                # Reset trial
                 session.start(t)
             elif key == ord("c"):
                 win.clear()
                 session.reset()
 
+            # Check if user closed the window
+            if cv2.getWindowProperty("Tremor HUD", cv2.WND_PROP_VISIBLE) < 1:
+                break
+
     cv2.destroyAllWindows()
+
+
+def main():
+    import sys
+    import os
+
+    if "--desktop" in sys.argv or "-d" in sys.argv:
+        run_desktop_hud()
+    else:
+        # By default, launch the Multi-Page Web Application
+        import webbrowser
+        import threading
+        import socket
+
+        port = int(os.getenv("PORT", 5001))
+        url = f"http://127.0.0.1:{port}"
+
+        print("\n" + "=" * 65)
+        print("  TremorTrack MDS-UPDRS Clinical Motor Assessment Web App")
+        print("=" * 65)
+        print(f"  Launching Multi-Page Web Application on {url}")
+        print("  (Tip: To run the legacy desktop OpenCV window instead, use: python hud.py --desktop)")
+        print("=" * 65 + "\n")
+
+        # Check if server is already running on this port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.5)
+        is_port_in_use = (sock.connect_ex(('127.0.0.1', port)) == 0)
+        sock.close()
+
+        if is_port_in_use:
+            print(f"  --> Web application server is already active on {url}!")
+            print(f"  --> Opening browser tab directly...\n")
+            try:
+                webbrowser.open(url)
+            except Exception:
+                pass
+            return
+
+        def _open():
+            time.sleep(1.2)
+            try:
+                webbrowser.open(url)
+            except Exception:
+                pass
+
+        threading.Thread(target=_open, daemon=True).start()
+
+        import app
+        app.app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
 
 
 if __name__ == "__main__":
     main()
+

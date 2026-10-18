@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Stage 1: Finger Tapping Test (MDS-UPDRS 3.4){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header & Breadcrumbs -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+    <div class="flex items-center space-x-3">
+      <a href="{{ url_for('home') }}" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </a>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-xl font-bold text-white tracking-tight">Stage 1: Bradykinesia Finger Tapping Test</h1>
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-semibold font-mono">
+            MDS-UPDRS 3.4
+          </span>
+        </div>
+        <p class="text-xs text-slate-400">10-second thumb-index aperture kinematics trial tracking tap rate and fatigue slope.</p>
+      </div>
+    </div>
+
+    <!-- Live Status Pill -->
+    <div class="flex items-center space-x-3">
+      <div id="statusBadge" class="px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 flex items-center space-x-2">
+        <span id="statusIndicator" class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span id="statusText">AWAITING START</span>
+      </div>
+      <a href="{{ url_for('home') }}" class="text-xs px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        Back to Home
+      </a>
+    </div>
+  </div>
+
+  <!-- Dual Layout: Stream Left, Telemetry & Scorecard Right -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Left Column: Video Feed & Stream Controls (8 cols) -->
+    <div class="lg:col-span-8 space-y-4">
+      
+      <!-- Video Container -->
+      <div class="glass-panel rounded-2xl p-2 border border-slate-800 shadow-2xl relative overflow-hidden bg-slate-950 group">
+        <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
+          <img id="videoFeed" src="{{ url_for('video_feed', test_type='tapping') }}"
+               class="w-full h-full object-cover select-none"
+               alt="Stage 1 Finger Tapping MJPEG Stream">
+          
+          <!-- Live Overlay Timer (Top Right) -->
+          <div id="streamTimerOverlay" class="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-cyan-500/30 text-cyan-300 font-mono text-sm font-bold shadow-lg flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span id="overlayTimerText">10.0s</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar Under Video -->
+        <div class="w-full bg-slate-900 h-1.5 mt-2 rounded-full overflow-hidden">
+          <div id="trialProgressBar" class="h-full bg-cyan-400 w-0 transition-all duration-150"></div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="glass-panel rounded-xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center space-x-2">
+          <button id="btnStartTest" onclick="startTrial()" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs tracking-wide shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition-all">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+            </svg>
+            <span>Start 10s Assessment</span>
+          </button>
+          <button id="btnResetTest" onclick="resetTrial()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition">
+            ↺ Reset
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2 text-xs text-slate-400">
+          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">SPACE</kbd>
+          <span>to Start</span>
+          <span class="text-slate-600">&bull;</span>
+          <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">R</kbd>
+          <span>to Retry</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Protocol Instructions, Live Metrics, & Post-Trial Scorecard (4 cols) -->
+    <div class="lg:col-span-4 space-y-4">
+
+      <!-- Protocol Guide Card -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Clinical Protocol (MDS-UPDRS 3.4)
+        </h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Position dominant or affected hand in webcam view. Once timer begins, <strong class="text-white">tap thumb and index finger as WIDE and FAST as possible</strong> for 10 seconds without stopping.
+        </p>
+      </div>
+
+      <!-- Real-Time Kinematics Card -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            Live Kinematic Telemetry
+          </h3>
+          <span id="liveApertureBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-cyan-500/30 text-cyan-300">
+            Aperture: <strong id="valAperture">--</strong>
+          </span>
+        </div>
+
+        <!-- Synced Live Waveform Canvas -->
+        <div class="bg-slate-950 rounded-xl p-3 border border-slate-800/90 relative overflow-hidden">
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-1.5">
+            <span class="text-cyan-400 font-semibold">APERTURE WAVEFORM (SYNCED)</span>
+            <span>Ref: 1.0 (Green)</span>
+          </div>
+          <canvas id="liveApertureCanvas" height="90" class="w-full block"></canvas>
+          <div class="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
+            <span>-2.0s</span>
+            <span>-1.0s</span>
+            <span>NOW (Live)</span>
+          </div>
+        </div>
+        
+        <!-- Live Metric Tiles -->
+        <div class="grid grid-cols-2 gap-2 text-center">
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">Active Tap Speed</span>
+            <span id="liveRate" class="text-lg font-bold text-cyan-400 font-mono">-- <span class="text-xs font-normal">Hz</span></span>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">Fatigue Decr.</span>
+            <span id="liveDecrement" class="text-lg font-bold text-amber-400 font-mono">-- %</span>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">Total Taps</span>
+            <span id="liveTaps" class="text-lg font-bold text-white font-mono">--</span>
+          </div>
+          <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-medium block">Hesitation (CV)</span>
+            <span id="liveCV" class="text-lg font-bold text-slate-300 font-mono">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 1 Scorecard (Dynamically populated on completion) -->
+      <div id="scorecardPanel" class="hidden glass-panel rounded-2xl p-5 border border-cyan-500/40 shadow-2xl space-y-4 glow-cyan transition-all duration-300">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <h3 class="text-sm font-bold text-white">Stage 1 Clinical Scorecard</h3>
+            <span class="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              Persisted to Patient Record
+            </span>
+          </div>
+          <span id="scoreBadge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-cyan-950 text-cyan-300 border border-cyan-500">
+            Score --/4
+          </span>
+        </div>
+
+        <!-- Clinical Risk Classification Banner -->
+        <div id="riskBanner" class="p-3.5 rounded-xl border text-center shadow-md">
+          <span class="text-[10px] uppercase tracking-wider block font-medium opacity-80">Clinical Risk Classification</span>
+          <span id="riskLabel" class="text-sm font-bold mt-0.5 block">NORMAL</span>
+        </div>
+
+        <!-- Score Rating Banner -->
+        <div id="scorecardBanner" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
+          <span class="text-[10px] text-slate-400 uppercase tracking-wider block">MDS-UPDRS Bradykinesia Rating</span>
+          <span id="scorecardLabel" class="text-base font-bold text-white mt-0.5 block">Analyzing...</span>
+        </div>
+
+        <!-- Metrics Summary Grid -->
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Final Tap Speed:</span>
+            <span id="scRate" class="font-mono font-bold text-white">-- Hz</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Fatigue Decrement:</span>
+            <span id="scDecrement" class="font-mono font-bold text-white">-- %</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Amplitude Decay Slope:</span>
+            <span id="scSlope" class="font-mono font-bold text-white">-- /s</span>
+          </div>
+          <div class="flex justify-between py-1.5 border-b border-slate-800/80">
+            <span class="text-slate-400">Total Count & Hesitations:</span>
+            <span id="scTaps" class="font-mono font-bold text-white">-- taps (CV: --)</span>
+          </div>
+        </div>
+
+        <!-- Retry and Return Actions -->
+        <div class="pt-2 flex items-center space-x-2">
+          <button onclick="startTrial()" class="flex-1 py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs tracking-wide shadow-md transition">
+            ↺ Retry Test
+          </button>
+          <a href="{{ url_for('home') }}" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs text-center transition">
+            Back to Home &rarr;
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let pollInterval = null;
+  let isCompletedHandled = false;
+
+  // Synced live graph renderer
+  const canvas = document.getElementById('liveApertureCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth - 24;
+    canvas.height = 90;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function drawLiveApertureWaveform(trace) {
+    if (!ctx || !canvas) return;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Clear background
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle grid lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let y = 15; y < h; y += 25) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+    }
+    ctx.stroke();
+
+    // Reference Line at 1.0 (Target full aperture)
+    // Scale: y=0 maps to aperture 1.8, y=h maps to aperture 0.0
+    const maxAp = 1.8;
+    const refY = h - (1.0 / maxAp) * h;
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, refY);
+    ctx.lineTo(w, refY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (!trace || trace.length < 2) {
+      ctx.fillStyle = '#475569';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText('Awaiting hand in webcam view...', 10, h / 2 + 4);
+      return;
+    }
+
+    // Draw live waveform path
+    const step = w / Math.max(trace.length - 1, 1);
+    ctx.beginPath();
+    trace.forEach((val, i) => {
+      const v = Math.max(0, Math.min(val, maxAp));
+      const px = i * step;
+      const py = h - (v / maxAp) * (h - 10) - 5;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+
+    // Glowing cyan line
+    ctx.strokeStyle = '#00e5ff';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#00e5ff';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Draw active dot at newest sample
+    const lastVal = trace[trace.length - 1];
+    const lastX = (trace.length - 1) * step;
+    const lastY = h - (Math.min(lastVal, maxAp) / maxAp) * (h - 10) - 5;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#00e5ff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  async function startTrial() {
+    isCompletedHandled = false;
+    document.getElementById('scorecardPanel').classList.add('hidden');
+    try {
+      const resp = await fetch('/api/start_test/tapping', { method: 'POST' });
+      const data = await resp.json();
+      console.log('Started Tapping Trial:', data);
+    } catch (e) {
+      console.error('Error starting test:', e);
+    }
+  }
+
+  async function resetTrial() {
+    isCompletedHandled = false;
+    document.getElementById('scorecardPanel').classList.add('hidden');
+    try {
+      const resp = await fetch('/api/reset_test/tapping', { method: 'POST' });
+      const data = await resp.json();
+      console.log('Reset Tapping Trial:', data);
+    } catch (e) {
+      console.error('Error resetting test:', e);
+    }
+  }
+
+  // Fast 100ms polling loop for ultra-smooth telemetry & synced graph
+  async function pollStatus() {
+    try {
+      const resp = await fetch('/api/test_status/tapping');
+      const data = await resp.json();
+
+      const statusBadge = document.getElementById('statusBadge');
+      const statusIndicator = document.getElementById('statusIndicator');
+      const statusText = document.getElementById('statusText');
+      const overlayTimer = document.getElementById('overlayTimerText');
+      const progressBar = document.getElementById('trialProgressBar');
+
+      if (data.state === 'COUNTDOWN') {
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-cyan-400 animate-ping';
+        statusText.innerText = `ACTIVE (${data.time_remaining}s)`;
+        overlayTimer.innerText = `${data.time_remaining}s`;
+        progressBar.style.width = `${data.progress * 100}%`;
+      } else if (data.state === 'COMPLETED') {
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        statusText.innerText = 'COMPLETED';
+        overlayTimer.innerText = '0.0s';
+        progressBar.style.width = '100%';
+
+        if (!isCompletedHandled && data.results) {
+          isCompletedHandled = true;
+          renderScorecard(data.results);
+        }
+      } else {
+        statusIndicator.className = 'w-2 h-2 rounded-full bg-amber-400';
+        statusText.innerText = 'READY (IDLE)';
+        overlayTimer.innerText = '10.0s';
+        progressBar.style.width = '0%';
+      }
+
+      // Live Telemetry Sync (Runs on EVERY poll: IDLE, COUNTDOWN, COMPLETED)
+      if (data.live_metrics) {
+        const lm = data.live_metrics;
+
+        // Aperture readout
+        document.getElementById('valAperture').innerText = `${lm.current_aperture.toFixed(2)}`;
+
+        // Active tap speed
+        if (lm.rate > 0) {
+          document.getElementById('liveRate').innerHTML = `${lm.rate} <span class="text-xs font-normal">Hz</span>`;
+        } else if (data.state === 'COUNTDOWN') {
+          document.getElementById('liveRate').innerHTML = `<span class="text-xs text-cyan-300">Tapping...</span>`;
+        } else {
+          document.getElementById('liveRate').innerHTML = `0.0 <span class="text-xs font-normal">Hz</span>`;
+        }
+
+        // Fatigue decrement
+        document.getElementById('liveDecrement').innerText = `${lm.decrement_pct}%`;
+
+        // Total taps
+        document.getElementById('liveTaps').innerText = lm.n_taps;
+
+        // Hesitation CV
+        document.getElementById('liveCV').innerText = lm.cv > 0 ? lm.cv : '--';
+
+        // Render synced scrolling waveform graph
+        if (lm.recent_trace && lm.recent_trace.length > 0) {
+          drawLiveApertureWaveform(lm.recent_trace);
+        }
+      }
+
+      // If finished, override with final locked scorecard metrics
+      if (data.results && data.state === 'COMPLETED') {
+        document.getElementById('liveRate').innerHTML = `${data.results.rate} <span class="text-xs font-normal">Hz</span>`;
+        document.getElementById('liveDecrement').innerText = `${data.results.decrement_pct}%`;
+        document.getElementById('liveTaps').innerText = data.results.n_taps;
+        document.getElementById('liveCV').innerText = data.results.cv;
+      }
+
+    } catch (err) {
+      console.error('Poll error:', err);
+    }
+  }
+
+  function renderScorecard(res) {
+    const card = document.getElementById('scorecardPanel');
+    card.classList.remove('hidden');
+
+    const badge = document.getElementById('scoreBadge');
+    badge.innerText = `Score ${res.score}/4`;
+
+    const label = document.getElementById('scorecardLabel');
+    label.innerText = `MDS-UPDRS Score ${res.score} (${res.label})`;
+
+    const riskBanner = document.getElementById('riskBanner');
+    const riskLabel = document.getElementById('riskLabel');
+
+    if (res.is_elevated_risk) {
+      riskBanner.className = 'p-3.5 rounded-xl bg-rose-950/90 border border-rose-500/80 text-rose-200 text-center shadow-lg';
+      riskLabel.innerText = res.risk_badge || 'ELEVATED RISK / ASYMMETRY DETECTED';
+    } else {
+      riskBanner.className = 'p-3.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-200 text-center shadow-lg';
+      riskLabel.innerText = res.risk_badge || 'NORMAL (NO BRADYKINESIA DETECTED)';
+    }
+
+    if (res.score <= 1) {
+      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-500';
+    } else if (res.score === 2) {
+      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-amber-950 text-amber-300 border border-amber-500';
+    } else {
+      badge.className = 'text-xs px-2.5 py-1 rounded-full font-bold bg-rose-950 text-rose-300 border border-rose-500';
+    }
+
+    document.getElementById('scRate').innerText = `${res.rate} taps/s`;
+    document.getElementById('scDecrement').innerText = `${res.decrement_pct} %`;
+    document.getElementById('scSlope').innerText = `${res.slope} /s`;
+    document.getElementById('scTaps').innerText = `${res.n_taps} taps (CV: ${res.cv})`;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      startTrial();
+    } else if (e.code === 'KeyR') {
+      e.preventDefault();
+      startTrial();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    resizeCanvas();
+    pollInterval = setInterval(pollStatus, 100);
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Home Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <!-- 1. Patient Profile Banner -->
+  <div class="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-xl relative overflow-hidden">
+    <!-- Subtle gradient accent line -->
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-teal-400 to-rose-500"></div>
+
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      
+      <!-- Profile Info -->
+      <div class="flex items-start sm:items-center space-x-4">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-cyan-500 to-teal-400 p-0.5 shadow-lg shadow-cyan-500/20 shrink-0">
+          <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-2xl font-bold text-cyan-400">
+            {{ user.name[0] }}
+          </div>
+        </div>
+
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <h1 class="text-2xl font-bold text-white tracking-tight">{{ user.name }}</h1>
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono font-medium">
+              ID: {{ user.patient_id }}
+            </span>
+            {% if assessments and assessments[0].is_elevated_risk %}
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/50 text-rose-300 font-semibold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                Elevated Risk / Asymmetry
+              </span>
+            {% else %}
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-semibold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                Stable Monitoring
+              </span>
+            {% endif %}
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+            <span>Age: <strong class="text-slate-300">{{ user.age or 68 }}</strong></span>
+            <span>&bull;</span>
+            <span>Gender: <strong class="text-slate-300">{{ user.gender or 'Female' }}</strong></span>
+            <span>&bull;</span>
+            <span>Diagnosis: <strong class="text-slate-300">{{ user.diagnosis or 'MDS-UPDRS Assessment' }}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats Snapshot -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 border-t lg:border-t-0 lg:border-l border-slate-800 pt-4 lg:pt-0 lg:pl-8">
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-3">
+          <span class="text-[11px] text-slate-400 block uppercase font-medium">Total Trials</span>
+          <span class="text-xl font-bold text-white">{{ assessments|length }}</span>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-3">
+          <span class="text-[11px] text-slate-400 block uppercase font-medium">Latest Tapping</span>
+          {% set latest_tap = (assessments | selectattr("test_type", "equalto", "tapping") | list | first) %}
+          {% if latest_tap %}
+            <span class="text-xl font-bold text-cyan-400">{{ latest_tap.rate }} <span class="text-xs font-normal text-slate-400">Hz</span></span>
+          {% else %}
+            <span class="text-sm font-medium text-slate-500">No data</span>
+          {% endif %}
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-3 col-span-2 sm:col-span-1">
+          <span class="text-[11px] text-slate-400 block uppercase font-medium">Latest Tremor</span>
+          {% set latest_trem = (assessments | selectattr("test_type", "equalto", "tremor") | list | first) %}
+          {% if latest_trem %}
+            <span class="text-xl font-bold text-rose-400">{{ latest_trem.peak_hz }} <span class="text-xs font-normal text-slate-400">Hz</span></span>
+          {% else %}
+            <span class="text-sm font-medium text-slate-500">No data</span>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. Primary Navigation Cards: Decoupled Clinical Tests -->
+  <div>
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-lg font-bold text-white">Clinical Motor Assessment Protocols</h2>
+        <p class="text-xs text-slate-400">Select an independent 10-second stage below to stream live MediaPipe vision and lock metrics.</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Card A: Bradykinesia Finger Tapping Test (MDS-UPDRS 3.4) -->
+      <div class="glass-panel rounded-2xl p-6 border border-slate-800 hover:border-cyan-500/50 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between">
+        <div class="absolute -right-12 -top-12 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/20 transition-colors"></div>
+
+        <div>
+          <!-- Card Header & Badge -->
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-[11px] px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-semibold tracking-wide uppercase flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              MDS-UPDRS 3.4 &bull; Stage 1
+            </span>
+            <span class="text-xs text-slate-400 font-mono">10.0s Trial</span>
+          </div>
+
+          <h3 class="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">
+            Bradykinesia Finger Tapping Test
+          </h3>
+          <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+            Measures repetitive thumb-index aperture tapping dynamics. Automatically computes active tapping speed (Hz), amplitude decrement fatigue slope (%), rhythm coefficient of variation (CV), and assigns standardized MDS-UPDRS 0–4 ratings.
+          </p>
+
+          <!-- Core Clinical Features -->
+          <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-900/90 rounded-lg p-2.5 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Tracked Signal</span>
+              <span class="font-mono text-cyan-400 font-medium">palm_ratio (2D/3D)</span>
+            </div>
+            <div class="bg-slate-900/90 rounded-lg p-2.5 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Kinematic Model</span>
+              <span class="text-slate-200 font-medium">Fatigue Regression</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <div class="text-xs text-slate-400">
+            {% if latest_tap %}
+              Last Score: <strong class="text-slate-200">Score {{ latest_tap.score }}/4 ({{ latest_tap.label }})</strong>
+            {% else %}
+              Status: <span class="text-slate-500">Ready to test</span>
+            {% endif %}
+          </div>
+          <a href="{{ url_for('test_tapping') }}" id="btn-launch-tapping" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs tracking-wide shadow-lg shadow-cyan-500/20 hover:scale-[1.02] transition-all">
+            <span>Launch Tapping Test</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card B: Postural Tremor Spectral Test (MDS-UPDRS 3.15) -->
+      <div class="glass-panel rounded-2xl p-6 border border-slate-800 hover:border-rose-500/50 transition-all duration-300 relative group overflow-hidden flex flex-col justify-between">
+        <div class="absolute -right-12 -top-12 w-40 h-40 bg-rose-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-rose-500/20 transition-colors"></div>
+
+        <div>
+          <!-- Card Header & Badge -->
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-[11px] px-3 py-1 rounded-full bg-rose-950/80 border border-rose-500/40 text-rose-300 font-semibold tracking-wide uppercase flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+              MDS-UPDRS 3.15 &bull; Stage 2
+            </span>
+            <span class="text-xs text-slate-400 font-mono">10.0s Trial</span>
+          </div>
+
+          <h3 class="text-xl font-bold text-white group-hover:text-rose-300 transition-colors">
+            Postural Tremor Spectral Test
+          </h3>
+          <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+            Measures index fingertip vertical oscillations along the gravity axis during sustained horizontal extension. Computes Welch power spectral density, isolates 4–6 Hz parkinsonian tremor band concentration, and detects pathological frequency peaks.
+          </p>
+
+          <!-- Core Clinical Features -->
+          <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-900/90 rounded-lg p-2.5 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Tracked Signal</span>
+              <span class="font-mono text-rose-400 font-medium">index_tip_height (px)</span>
+            </div>
+            <div class="bg-slate-900/90 rounded-lg p-2.5 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Spectral Engine</span>
+              <span class="text-slate-200 font-medium">Welch PSD (4-6 Hz)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <div class="text-xs text-slate-400">
+            {% if latest_trem %}
+              Last Peak: <strong class="text-slate-200">{{ latest_trem.peak_hz }} Hz (Score {{ latest_trem.score }}/3)</strong>
+            {% else %}
+              Status: <span class="text-slate-500">Ready to test</span>
+            {% endif %}
+          </div>
+          <a href="{{ url_for('test_tremor') }}" id="btn-launch-tremor" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs tracking-wide shadow-lg shadow-rose-500/20 hover:scale-[1.02] transition-all">
+            <span>Launch Tremor Test</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 3. Longitudinal Trend Charts (Chart.js) -->
+  <div class="glass-panel rounded-2xl p-6 border border-slate-800 shadow-xl">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 mb-6 gap-2">
+      <div>
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>Longitudinal Motor Kinematics & Spectral Trends</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-normal">Interactive Chart</span>
+        </h3>
+        <p class="text-xs text-slate-400">Historical progression tracking tapping speed, fatigue decay, and tremor spectral peaks.</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-xs text-slate-400 font-mono">Storage: {{ db_backend }}</span>
+      </div>
+    </div>
+
+    <!-- Dual Trend Chart Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Chart A: Tapping Kinematics -->
+      <div class="bg-slate-900/90 rounded-xl p-4 border border-slate-800/80">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-cyan-400 uppercase tracking-wide">Bradykinesia: Tap Rate & Fatigue</span>
+          <span class="text-[11px] text-slate-400 font-mono">Hz / % Decr</span>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="tappingTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart B: Tremor Spectral Peak & Band Ratio -->
+      <div class="bg-slate-900/90 rounded-xl p-4 border border-slate-800/80">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-rose-400 uppercase tracking-wide">Postural Tremor: Peak Hz & 4-6 Hz Power</span>
+          <span class="text-[11px] text-slate-400 font-mono">Peak Hz / Band %</span>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="tremorTrendChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 4. Patient Assessment History Table -->
+  <div class="glass-panel rounded-2xl p-6 border border-slate-800 shadow-xl">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 mb-4 gap-2">
+      <div>
+        <h3 class="text-base font-bold text-white">Patient Assessment History</h3>
+        <p class="text-xs text-slate-400">Chronological clinical scorecard records and locked kinematic metrics.</p>
+      </div>
+      <div class="text-xs text-slate-400">
+        Showing {{ assessments|length }} recorded sessions
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="text-[11px] text-slate-400 uppercase bg-slate-900/60 border-b border-slate-800">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Timestamp</th>
+            <th class="px-4 py-3 font-semibold">Test Protocol</th>
+            <th class="px-4 py-3 font-semibold">MDS-UPDRS Rating</th>
+            <th class="px-4 py-3 font-semibold">Primary Kinematic Metrics</th>
+            <th class="px-4 py-3 font-semibold">Risk Classification</th>
+            <th class="px-4 py-3 font-semibold text-right">Clinical Notes</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 text-slate-300">
+          {% for a in assessments %}
+          <tr class="hover:bg-slate-800/30 transition">
+            <td class="px-4 py-3.5 whitespace-nowrap font-mono text-slate-400">
+              {{ a.timestamp }}
+            </td>
+            <td class="px-4 py-3.5 whitespace-nowrap font-medium">
+              {% if a.test_type == 'tapping' %}
+                <span class="inline-flex items-center gap-1.5 text-cyan-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  Stage 1: Finger Tapping
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1.5 text-rose-400">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                  Stage 2: Postural Tremor
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3.5 whitespace-nowrap">
+              {% if a.score == 0 %}
+                <span class="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-semibold">Score 0 &bull; Normal</span>
+              {% elif a.score == 1 %}
+                <span class="px-2 py-0.5 rounded-full bg-teal-950 text-teal-400 border border-teal-500/30 font-semibold">Score 1 &bull; Slight</span>
+              {% elif a.score == 2 %}
+                <span class="px-2 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-500/30 font-semibold">Score 2 &bull; Mild</span>
+              {% elif a.score == 3 %}
+                <span class="px-2 py-0.5 rounded-full bg-orange-950 text-orange-400 border border-orange-500/30 font-semibold">Score 3 &bull; Moderate</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-500/30 font-semibold">Score 4 &bull; Severe</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3.5 font-mono text-slate-300">
+              {% if a.test_type == 'tapping' %}
+                <span>Speed: <strong class="text-white">{{ a.rate }}</strong> taps/s</span> &bull; 
+                <span>Decr: <strong class="text-white">{{ (a.decrement * 100)|round(1) }}%</strong></span> &bull;
+                <span class="text-slate-400">{{ a.n_taps }} taps</span>
+              {% else %}
+                <span>Peak: <strong class="text-white">{{ a.peak_hz }}</strong> Hz</span> &bull;
+                <span>4-6 Hz Power: <strong class="text-white">{{ (a.band_ratio * 100)|round(1) }}%</strong></span> &bull;
+                <span class="text-slate-400">{{ a.rms|round(4) }} RMS</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3.5 whitespace-nowrap">
+              {% if a.is_elevated_risk %}
+                <span class="px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800 text-[11px] font-semibold">
+                  ELEVATED RISK
+                </span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[11px] font-semibold">
+                  NORMAL
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3.5 text-right text-slate-400 max-w-xs truncate">
+              {{ a.notes or 'Completed protocol without interruption.' }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+              No clinical trials recorded yet. Launch a test above to begin.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Fetch dynamic longitudinal trends from backend API
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const resp = await fetch('/api/patient_trends');
+      const data = await resp.json();
+
+      // Configure Chart.js dark theme defaults
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+      Chart.defaults.font.family = 'Inter, sans-serif';
+
+      // 1. Tapping Trend Chart
+      const tapPoints = data.tapping || [];
+      const tapLabels = tapPoints.map(p => p.date.split(' ')[0]);
+      const tapRates = tapPoints.map(p => p.rate);
+      const tapDecrements = tapPoints.map(p => p.decrement_pct);
+
+      new Chart(document.getElementById('tappingTrendChart'), {
+        type: 'line',
+        data: {
+          labels: tapLabels,
+          datasets: [
+            {
+              label: 'Tap Speed (Hz)',
+              data: tapRates,
+              borderColor: '#00e5ff',
+              backgroundColor: 'rgba(0, 229, 255, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              fill: true,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Fatigue Decrement (%)',
+              data: tapDecrements,
+              borderColor: '#f59e0b',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              tension: 0.3,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: { display: true, text: 'Tap Speed (Hz)' },
+              suggestedMin: 0,
+              suggestedMax: 4
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: { display: true, text: 'Fatigue Decrement (%)' },
+              grid: { drawOnChartArea: false },
+              suggestedMin: 0,
+              suggestedMax: 60
+            }
+          }
+        }
+      });
+
+      // 2. Tremor Trend Chart
+      const tremPoints = data.tremor || [];
+      const tremLabels = tremPoints.map(p => p.date.split(' ')[0]);
+      const tremPeaks = tremPoints.map(p => p.peak_hz);
+      const tremBands = tremPoints.map(p => p.band_ratio_pct);
+
+      new Chart(document.getElementById('tremorTrendChart'), {
+        type: 'line',
+        data: {
+          labels: tremLabels,
+          datasets: [
+            {
+              label: 'Peak Frequency (Hz)',
+              data: tremPeaks,
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              fill: true,
+              yAxisID: 'y'
+            },
+            {
+              label: '4-6 Hz Band Power (%)',
+              data: tremBands,
+              borderColor: '#a855f7',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              tension: 0.3,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: { display: true, text: 'Dominant Peak (Hz)' },
+              suggestedMin: 0,
+              suggestedMax: 8
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: { display: true, text: '4-6 Hz Band Power (%)' },
+              grid: { drawOnChartArea: false },
+              suggestedMin: 0,
+              suggestedMax: 60
+            }
+          }
+        }
+      });
+
+    } catch (e) {
+      console.error('Failed to load trend analytics:', e);
+    }
+  });
+</script>
+{% endblock %}
