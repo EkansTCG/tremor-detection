@@ -282,18 +282,20 @@
       return;
     }
 
-    // Auto-scale vertical range around trace median
-    let minVal = Math.min(...trace);
-    let maxVal = Math.max(...trace);
-    let span = Math.max(maxVal - minVal, 0.08);
-    let midVal = (maxVal + minVal) / 2;
+    // Stabilized zero-mean waveform around dashed center baseline (midY)
+    let maxAbs = 0;
+    for (let i = 0; i < trace.length; i++) {
+      const a = Math.abs(trace[i]);
+      if (a > maxAbs) maxAbs = a;
+    }
+    // Deadband minimum span (0.16) so natural subpixel landmark jitter stays calm and flat on the center line
+    const span = Math.max(maxAbs * 2.2, 0.16);
 
     const step = w / Math.max(trace.length - 1, 1);
     ctx.beginPath();
     trace.forEach((val, i) => {
-      const normalized = (val - (midVal - span / 2)) / span;
       const px = i * step;
-      const py = h - normalized * (h - 14) - 7;
+      const py = midY - (val / (span / 2)) * (midY - 8);
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     });
@@ -307,10 +309,9 @@
     ctx.shadowBlur = 0;
 
     // Active dot at newest sample
-    const lastVal = trace[trace.length - 1];
-    const lastNorm = (lastVal - (midVal - span / 2)) / span;
+    const lastVal = trace[trace.length - 1] || 0;
     const lastX = (trace.length - 1) * step;
-    const lastY = h - lastNorm * (h - 14) - 7;
+    const lastY = midY - (lastVal / (span / 2)) * (midY - 8);
 
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();

@@ -128,21 +128,40 @@ def analyze_tremor_spectrum(t, y, x_coord=None, fs=FS):
     b, a = butter(4, [1.0 / (fs / 2), 12.0 / (fs / 2)], btype="band")
     yf = filtfilt(b, a, detrend(y_u))
 
-    # If X coordinates are provided, evaluate X axis as well for omni-directional shaking
+    has_x = False
     if x_coord is not None and len(x_coord) == len(t):
         _, x_u = resample_uniform(t, x_coord, fs)
         if len(x_u) == len(y_u):
             xf = filtfilt(b, a, detrend(x_u))
-            # Pick primary oscillation axis with highest kinetic excursion
-            rms_x = float(np.sqrt(np.mean(xf ** 2)))
-            rms_y = float(np.sqrt(np.mean(yf ** 2)))
-            sig = xf if rms_x > rms_y else yf
-        else:
-            sig = yf
+            has_x = True
+
+    if has_x:
+        rms_x = float(np.sqrt(np.mean(xf ** 2)))
+        rms_y = float(np.sqrt(np.mean(yf ** 2)))
+        rms = float(np.hypot(rms_x, rms_y))
+
+        exc_x = float(np.ptp(xf))
+        exc_y = float(np.ptp(yf))
+        excursion = float(np.hypot(exc_x, exc_y))
+
+        dt = 1.0 / fs
+        vel_x = np.diff(xf) / dt
+        vel_y = np.diff(yf) / dt
+        vel_rms = float(np.sqrt(np.mean(vel_x ** 2 + vel_y ** 2))) if len(vel_x) else 0.0
+
+        sig = xf if rms_x > rms_y else yf
     else:
         sig = yf
+        rms = float(np.sqrt(np.mean(yf ** 2)))
+        excursion = float(np.ptp(yf))
+        dt = 1.0 / fs
+        vel = np.diff(yf) / dt
+        vel_rms = float(np.sqrt(np.mean(vel ** 2))) if len(vel) else 0.0
 
     out["x"] = sig
+    out["rms"] = rms
+    out["excursion"] = excursion
+    out["velocity_rms"] = vel_rms
 
     # Power Spectral Density via Welch
     f, p = welch(sig, fs=fs, nperseg=min(256, len(sig)))
@@ -159,49 +178,18 @@ def analyze_tremor_spectrum(t, y, x_coord=None, fs=FS):
     if full.any():
         out["peak_hz"] = float(f[full][np.argmax(p[full])])
 
-    # Kinematic excursion & RMS
-    rms = float(np.sqrt(np.mean(sig ** 2)))
-    excursion = float(np.ptp(sig))
-    dt = 1.0 / fs
-    vel = np.diff(sig) / dt
-    vel_rms = float(np.sqrt(np.mean(vel ** 2))) if len(vel) else 0.0
-
-    out["rms"] = rms
-    out["excursion"] = excursion
-    out["velocity_rms"] = vel_rms
-
     ratio = out["band_ratio"]
     peak_hz = out["peak_hz"]
 
-    # Accurate MDS-UPDRS 3.15 Physical Scoring:
-    # 0: Normal (<0.012 RMS, minimal excursion)
-    # 1: Slight (0.012 - 0.028 RMS, or emerging 4-6 Hz band concentration)
-    # 2: Mild (0.028 - 0.065 RMS, or distinct 4-6 Hz tremor)
-    # 3: Moderate (0.065 - 0.120 RMS, or prominent kinetic shaking)
-    # 4: Severe (>=0.120 RMS or >=0.30 excursion, violent/high-amplitude shaking)
-    if rms < 0.012 and excursion < 0.045:
-        score = 0
-    elif rms < 0.028 and excursion < 0.10:
-        score = 1
-    elif rms < 0.065 and excursion < 0.20:
-        score = 2
-    elif rms < 0.120 and excursion < 0.35:
-        score = 3
-    else:
-        score = 4
-
-    # If prominent 4-6 Hz Parkinsonian oscillation is present with sufficient amplitude
+    # 4-6 Hz Parkinsonian tremor condition
     is_parkinsonian = (ratio >= 0.25 and 4.0 <= peak_hz <= 6.5 and rms >= 0.010)
-    if is_parkinsonian and score < 1:
-        score = 1
 
-    # Elevated risk determination:
-    # Triggered if score >= 2 OR Parkinsonian band concentrated OR active kinetic shaking detected
+    # Elevated risk triggers if Parkinsonian band concentrated OR significant 2D RMS / velocity / excursion detected
     is_elevated = bool(
-        score >= 2 or
         is_parkinsonian or
-        rms >= 0.028 or
-        excursion >= 0.09
+        rms >= 0.018 or
+        vel_rms >= 0.35 or
+        excursion >= 0.065
     )
 
     if not is_elevated:
@@ -209,15 +197,24 @@ def analyze_tremor_spectrum(t, y, x_coord=None, fs=FS):
         tremor_type = "Physiological (Normal)"
         label = "Normal"
         score = 0
-    elif is_parkinsonian:
-        risk_badge = "ELEVATED RISK / 4-6 HZ PARKINSONIAN BAND"
-        tremor_type = "Parkinsonian Postural Tremor (4-6 Hz)"
-        label = SCORE_LABELS.get(score, "Mild")
     else:
-        risk_badge = "ELEVATED RISK / ACTIVE SHAKING DETECTED"
-        tremor_type = "High-Amplitude Kinetic Shaking / Tremor"
-        score = max(score, 2)
+        # Proportionate MDS-UPDRS 3.15 Physical Scoring (1-4)
+        if rms >= 0.090 or vel_rms >= 1.20 or excursion >= 0.25:
+            score = 4
+        elif rms >= 0.050 or vel_rms >= 0.60 or excursion >= 0.14:
+            score = 3
+        elif rms >= 0.025 or vel_rms >= 0.35 or excursion >= 0.08:
+            score = 2
+        else:
+            score = 1
+
         label = SCORE_LABELS.get(score, "Moderate")
+        if is_parkinsonian:
+            risk_badge = "ELEVATED RISK / 4-6 HZ PARKINSONIAN BAND"
+            tremor_type = "Parkinsonian Postural Tremor (4-6 Hz)"
+        else:
+            risk_badge = "ELEVATED RISK / ABNORMAL MOVEMENT DETECTED"
+            tremor_type = "High-Amplitude Kinetic Shaking / Tremor"
 
     out["score"] = score
     out["label"] = label

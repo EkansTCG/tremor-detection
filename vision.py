@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import time
 import urllib.request
+from collections import deque
 from dataclasses import dataclass, field
 
 # pyrefly: ignore[missing-import]
@@ -103,6 +104,7 @@ class HandTracker:
         self._last_ts_ms = -1
         self._fps = 0.0
         self._last_frame_t = None
+        self._baseline_hand_size: float | None = None
 
     # ------------------------------------------------------------------ core
     # grab one frame
@@ -151,9 +153,8 @@ class HandTracker:
             hands.append(hf)
         return hands
 
-    @staticmethod
     # Calculate two key numbers
-    def _features(hf: HandFrame, w: int, h: int) -> None:
+    def _features(self, hf: HandFrame, w: int, h: int) -> None:
         # 3D metric hand size (wrist -> middle MCP); robust to camera distance and rotation.
         hf.hand_size = float(np.linalg.norm(hf.world[MIDDLE_MCP] - hf.world[WRIST]))
         if hf.hand_size > 1e-6:
@@ -163,10 +164,25 @@ class HandTracker:
         # World landmarks are hand-centered, so whole-hand translation (tremor) must come from
         # image space. Normalize by hand size in pixels so it's distance-invariant.
         px = hf.image[:, :2] * np.array([w, h])
-        size_px = np.linalg.norm(px[MIDDLE_MCP] - px[WRIST])
-        if size_px > 1e-6:
-            hf.tremor_y = float(px[MIDDLE_MCP, 1] / size_px)
-        hf.extras["hand_size_px"] = float(size_px)
+
+        # Invariant 2D palm scale:
+        # When hand is held flat towards camera, wrist->middle MCP foreshortens heavily,
+        # but knuckle width (index MCP -> pinky MCP) is perpendicular to camera and stays stable.
+        palm_w = float(np.linalg.norm(px[INDEX_MCP] - px[PINKY_MCP]))
+        palm_h = float(np.linalg.norm(px[MIDDLE_MCP] - px[WRIST]))
+        size_px = max(palm_w, palm_h, 25.0)
+
+        # High-inertia baseline stabilization:
+        # Prevents the divisor from continuously drifting or oscillating as the hand changes posture
+        if self._baseline_hand_size is None:
+            self._baseline_hand_size = size_px
+        else:
+            self._baseline_hand_size = 0.98 * self._baseline_hand_size + 0.02 * size_px
+
+        baseline_size = self._baseline_hand_size
+        if baseline_size > 1e-6:
+            hf.tremor_y = float(px[MIDDLE_MCP, 1] / baseline_size)
+        hf.extras["hand_size_px"] = float(baseline_size)
 
     # ------------------------------------------------------------- drawing
     @staticmethod

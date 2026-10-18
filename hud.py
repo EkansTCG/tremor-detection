@@ -578,18 +578,19 @@ def run_desktop_hud():
 
             ratio = float("nan")
             iy = float("nan")
+            ix = float("nan")
 
             if hands:
                 hf = hands[0]
                 ratio = palm_ratio(hf)
-                iy = index_tip_height(hf)
+                ix, iy = index_tip_coords(hf)
                 win.push(t, ratio, iy)
                 tracker.draw(frame, hands, show_pinch=False)
                 draw_pinch_cue(frame, hf, ratio)
             else:
                 win.push(t, float("nan"), float("nan"))
 
-            session.update(t, ratio, iy)
+            session.update(t, ratio, iy, ix)
 
             if session.state != SessionState.STAGE3_SCORECARD:
                 draw_window_graph(frame, win)

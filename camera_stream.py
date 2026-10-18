@@ -237,6 +237,15 @@ class StreamManager:
 
         cur_val = float(iy_arr[-1]) if len(iy_arr) else 0.0
 
+        # Stabilized zero-mean tremor trace (removes slow arm posture drift)
+        recent_raw = [float(x) for x in iy_arr[-60:] if np.isfinite(x)]
+        if len(recent_raw) >= 10:
+            median_y = float(np.median(recent_raw))
+            detrended = np.array(recent_raw) - median_y
+            clean_trace = [round(float(x), 4) for x in detrended]
+        else:
+            clean_trace = [round(float(x - cur_val), 4) for x in recent_raw] if recent_raw else [0.0]
+
         if len(iy_arr) < 15:
             return {
                 "current_y": round(cur_val, 3),
@@ -248,7 +257,7 @@ class StreamManager:
                 "is_elevated": False,
                 "status_badge": "NORMAL",
                 "tremor_type": "Physiological (Normal)",
-                "recent_trace": [round(float(x), 4) for x in iy_arr[-60:]]
+                "recent_trace": clean_trace
             }
 
         peak_hz = 0.0
@@ -275,7 +284,11 @@ class StreamManager:
             except Exception:
                 pass
         else:
-            is_elevated = bool(rms >= 0.028 or excursion >= 0.09)
+            # Baseline check on detrended signal so slow arm lowering isn't treated as shaking
+            if len(recent_raw) >= 10:
+                rms = round(float(np.sqrt(np.mean(detrended ** 2))), 4)
+                excursion = round(float(np.ptp(detrended)), 4)
+            is_elevated = bool(rms >= 0.025 or excursion >= 0.08)
             if is_elevated:
                 status_badge = "ELEVATED (Active Shaking)"
                 score = 2
@@ -290,7 +303,7 @@ class StreamManager:
             "is_elevated": is_elevated,
             "status_badge": status_badge,
             "tremor_type": tremor_type,
-            "recent_trace": [round(float(x), 4) if np.isfinite(x) else 0.0 for x in iy_arr[-60:]]
+            "recent_trace": clean_trace
         }
 
     def get_status(self, test_type: str) -> Dict[str, Any]:

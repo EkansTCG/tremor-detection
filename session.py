@@ -244,10 +244,10 @@ class TremorSession:
         if self.state_start_time is None:
             self.state_start_time = t
 
-        if np.isfinite(index_y):
+        if np.isfinite(index_y) and (index_x is None or np.isfinite(index_x)):
             self.t_buf.append(t)
             self.iy_buf.append(index_y)
-            if index_x is not None and np.isfinite(index_x):
+            if index_x is not None:
                 self.ix_buf.append(index_x)
 
         elapsed = t - self.state_start_time
@@ -289,6 +289,7 @@ class AssessmentSession:
 
         self.stage2_t: List[float] = []
         self.stage2_iy: List[float] = []
+        self.stage2_ix: List[float] = []
 
         # Locked-in results
         self.stage1_res: Optional[Stage1Results] = None
@@ -310,6 +311,7 @@ class AssessmentSession:
         self.stage1_ap.clear()
         self.stage2_t.clear()
         self.stage2_iy.clear()
+        self.stage2_ix.clear()
         self.stage1_res = None
         self.stage2_res = None
         self.is_elevated_risk = False
@@ -322,6 +324,7 @@ class AssessmentSession:
         self.stage1_ap.clear()
         self.stage2_t.clear()
         self.stage2_iy.clear()
+        self.stage2_ix.clear()
         self.stage1_res = None
         self.stage2_res = None
 
@@ -343,7 +346,7 @@ class AssessmentSession:
             return float(np.clip(elapsed / TRANSITION_DURATION, 0.0, 1.0))
         return 0.0
 
-    def update(self, t: float, aperture: float, index_y: float):
+    def update(self, t: float, aperture: float, index_y: float, index_x: Optional[float] = None):
         """Step the assessment session state machine with the latest frame metrics."""
         self.last_update_t = t
 
@@ -380,17 +383,20 @@ class AssessmentSession:
                 self.state_start_time = t
                 self.stage2_t.clear()
                 self.stage2_iy.clear()
+                self.stage2_ix.clear()
 
         # --- STAGE 2: POSTURAL TREMOR ---
-        # --- STAGE 2: POSTURAL TREMOR ---
         elif self.state == SessionState.STAGE2_COUNTDOWN:
-            if np.isfinite(index_y):
+            if np.isfinite(index_y) and (index_x is None or np.isfinite(index_x)):
                 self.stage2_t.append(t)
                 self.stage2_iy.append(index_y)
+                if index_x is not None:
+                    self.stage2_ix.append(index_x)
 
             elapsed = t - self.state_start_time
             if elapsed >= STAGE_DURATION:
-                raw_s2 = dsp.analyze_tremor_spectrum(self.stage2_t, self.stage2_iy)
+                x_coords = self.stage2_ix if len(self.stage2_ix) == len(self.stage2_t) else None
+                raw_s2 = dsp.analyze_tremor_spectrum(self.stage2_t, self.stage2_iy, x_coord=x_coords)
                 s2_elevated = bool(raw_s2.get("is_elevated_risk", False))
 
                 self.stage2_res = Stage2Results(
