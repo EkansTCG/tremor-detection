@@ -43,7 +43,7 @@
     <div class="lg:col-span-8 space-y-4">
       
       <!-- Video Container -->
-      <div class="glass-card rounded-2xl p-2.5 border border-ribbon-400/25 shadow-2xl relative overflow-hidden group">
+      <div class="glass-card dive-box dive-emerge rounded-2xl p-2.5 border border-ribbon-400/25 shadow-2xl relative overflow-hidden group">
         <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center">
           <img id="videoFeed" src="{{ url_for('video_feed', test_type='tapping') }}"
                class="w-full h-full object-cover select-none"
@@ -91,7 +91,7 @@
     <div class="lg:col-span-4 space-y-4">
 
       <!-- Protocol Guide Card -->
-      <div class="glass-card rounded-2xl p-5 border border-ocean-cyan/25 shadow-xl">
+      <div class="glass-card dive-box rounded-2xl p-5 border border-ocean-cyan/25 shadow-xl">
         <h3 class="text-xs font-bold uppercase tracking-wider text-ocean-cyan mb-2 flex items-center gap-1.5">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -104,7 +104,7 @@
       </div>
 
       <!-- Real-Time Kinematics Card -->
-      <div class="glass-card rounded-2xl p-5 border border-ocean-800/90 shadow-xl space-y-4">
+      <div class="glass-card dive-box rounded-2xl p-5 border border-ocean-800/90 shadow-xl space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-ocean-cyan animate-pulse"></span>
@@ -115,8 +115,8 @@
           </span>
         </div>
 
-        <!-- Synced Live Waveform Canvas -->
-        <div class="bg-ocean-950/90 rounded-xl p-3 border border-ocean-800/90 relative overflow-hidden">
+        <!-- Synced Live Waveform Canvas (Dare to Dive Graph Box) -->
+        <div class="dive-graph-box p-3 border border-ocean-cyan/35 relative overflow-hidden">
           <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-1.5">
             <span class="text-ocean-cyan font-semibold">APERTURE WAVEFORM (SYNCED)</span>
             <span class="text-teal-400">Ref: 1.0 (Calm Target)</span>
@@ -131,19 +131,19 @@
         
         <!-- Live Metric Tiles -->
         <div class="grid grid-cols-2 gap-2 text-center">
-          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80 dive-tile cursor-pointer">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Active Tap Speed</span>
             <span id="liveRate" class="text-lg font-bold text-ocean-cyan font-mono">-- <span class="text-xs font-normal">Hz</span></span>
           </div>
-          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80 dive-tile cursor-pointer">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Fatigue Decr.</span>
             <span id="liveDecrement" class="text-lg font-bold text-amber-300 font-mono">-- %</span>
           </div>
-          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80 dive-tile cursor-pointer">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Total Taps</span>
             <span id="liveTaps" class="text-lg font-bold text-white font-mono">--</span>
           </div>
-          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80">
+          <div class="bg-ocean-900/70 rounded-xl p-3 border border-ocean-800/80 dive-tile cursor-pointer">
             <span class="text-[10px] text-slate-400 uppercase font-medium block">Hesitation (CV)</span>
             <span id="liveCV" class="text-lg font-bold text-slate-300 font-mono">--</span>
           </div>
@@ -151,7 +151,7 @@
       </div>
 
       <!-- Stage 1 Scorecard (Dynamically populated on completion) -->
-      <div id="scorecardPanel" class="hidden glass-card rounded-2xl p-5 border border-ribbon-400/35 shadow-2xl space-y-4 transition-all duration-300 relative">
+      <div id="scorecardPanel" class="hidden glass-card dive-box rounded-2xl p-5 border border-ribbon-400/35 shadow-2xl space-y-4 transition-all duration-300 relative">
         <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-ocean-cyan via-ocean-wave to-ribbon-pink rounded-t-2xl"></div>
         
         <div class="flex items-center justify-between pb-3 border-b border-ocean-800/80">
